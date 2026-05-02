@@ -438,7 +438,7 @@ Authentication and backend setup.
 
 Group management system.
 
-## Milestone 4 
+## Milestone 4 ✅ [COMPLETED]
 
 Expense management system.
 

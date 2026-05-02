@@ -5,28 +5,20 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import {
-  mockGroups,
-  mockExpenses,
-  mockUsers,
-  getBalances,
-} from '@/data/mockData';
+import { useGroupStore } from '@/store/groupStore';
+import { useExpenseStore } from '@/store/expenseStore';
+import ExpenseCard from '@/components/ExpenseCard';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
-
-const CATEGORY_ICONS: Record<string, keyof typeof Ionicons.glyphMap> = {
-  food: 'restaurant-outline',
-  travel: 'airplane-outline',
-  bills: 'receipt-outline',
-  shopping: 'cart-outline',
-  entertainment: 'film-outline',
-  other: 'ellipsis-horizontal-outline',
-};
 
 export default function GroupDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
-  const group = mockGroups.find((g) => g.id === id);
-  const expenses = mockExpenses.filter((e) => e.groupId === id);
-  const balances = getBalances(id || '');
+  const { groups } = useGroupStore();
+  const { expenses } = useExpenseStore();
+
+  const group = groups.find((g) => g.id === id);
+  const groupExpenses = expenses.filter((e) => e.groupId === id).sort(
+    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+  );
 
   if (!group) {
     return (
@@ -38,16 +30,9 @@ export default function GroupDetailsScreen() {
     );
   }
 
-  const getUserName = (userId: string) => {
-    return mockUsers.find((u) => u.id === userId)?.name || 'Unknown';
+  const handleAddExpense = () => {
+    router.push(`/expense?groupId=${id}`);
   };
-
-  const sortedExpenses = [...expenses].sort(
-    (a, b) => b.createdAt.getTime() - a.createdAt.getTime()
-  );
-
-  const totalOwed = balances.reduce((sum, b) => sum + b.balance, 0);
-  const netColor = totalOwed > 0 ? Colors.light.success : totalOwed < 0 ? Colors.light.danger : Colors.light.textSecondary;
 
   return (
     <ThemedView style={styles.container}>
@@ -63,15 +48,15 @@ export default function GroupDetailsScreen() {
               {group.name}
             </ThemedText>
             <View style={styles.netBalance}>
-              <ThemedText type="small" themeColor="textSecondary">Total balance</ThemedText>
-              <ThemedText type="subtitle" style={[styles.netAmount, { color: netColor }]}>
-                {totalOwed === 0 ? 'Settled up' : totalOwed > 0 ? `You get $${totalOwed.toFixed(2)}` : `You owe $${Math.abs(totalOwed).toFixed(2)}`}
+              <ThemedText type="small" themeColor="textSecondary">Total expenses</ThemedText>
+              <ThemedText type="subtitle" style={styles.netAmount}>
+                ${groupExpenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}
               </ThemedText>
             </View>
           </View>
 
           <View style={styles.actionRow}>
-            <Pressable style={styles.actionButton} onPress={() => router.push('/expense')}>
+            <Pressable style={styles.actionButton} onPress={handleAddExpense}>
               <Ionicons name="add-circle-outline" size={20} color={Colors.light.primary} />
               <ThemedText type="small" style={styles.actionText}>Add Expense</ThemedText>
             </Pressable>
@@ -87,59 +72,25 @@ export default function GroupDetailsScreen() {
 
           <View style={styles.section}>
             <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
-              BALANCES
+              EXPENSES ({groupExpenses.length})
             </ThemedText>
-            {balances.map((b) => {
-              const isPositive = b.balance > 0;
-              const isNegative = b.balance < 0;
-              const color = isPositive ? Colors.light.success : isNegative ? Colors.light.danger : Colors.light.textSecondary;
-              return (
-                <View key={b.userId} style={styles.balanceRow}>
-                  <View style={styles.balanceUser}>
-                    <View style={styles.balanceAvatar}>
-                      <ThemedText style={styles.balanceAvatarText}>
-                        {getUserName(b.userId).charAt(0).toUpperCase()}
-                      </ThemedText>
-                    </View>
-                    <ThemedText>{getUserName(b.userId)}</ThemedText>
-                  </View>
-                  <ThemedText style={[styles.balanceAmount, { color }]}>
-                    {b.balance === 0
-                      ? 'Settled up'
-                      : isPositive
-                      ? `Gets $${b.balance.toFixed(2)}`
-                      : `Owes $${Math.abs(b.balance).toFixed(2)}`}
-                  </ThemedText>
-                </View>
-              );
-            })}
-          </View>
-
-          <View style={styles.section}>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
-              EXPENSES
-            </ThemedText>
-            {sortedExpenses.map((expense) => {
-              const iconName = CATEGORY_ICONS[expense.category] || 'ellipsis-horizontal-outline';
-              const isPaidByYou = expense.paidBy === 'user1';
-              const amountColor = isPaidByYou ? Colors.light.success : Colors.light.text;
-              return (
-                <Pressable key={expense.id} style={({ pressed }) => [styles.expenseItem, pressed && styles.expensePressed]}>
-                  <View style={styles.expenseIcon}>
-                    <Ionicons name={iconName} size={22} color={Colors.light.primary} />
-                  </View>
-                  <View style={styles.expenseInfo}>
-                    <ThemedText type="subtitle">{expense.note}</ThemedText>
-                    <ThemedText type="small" themeColor="textSecondary">
-                      {getUserName(expense.paidBy)} paid · {expense.category}
-                    </ThemedText>
-                  </View>
-                  <ThemedText type="subtitle" style={[styles.expenseAmount, { color: amountColor }]}>
-                    ${expense.amount.toFixed(2)}
-                  </ThemedText>
-                </Pressable>
-              );
-            })}
+            {groupExpenses.length === 0 ? (
+              <View style={styles.emptyState}>
+                <Ionicons name="receipt-outline" size={48} color={Colors.light.textSecondary} />
+                <ThemedText type="subtitle" style={styles.emptyTitle}>No expenses yet</ThemedText>
+                <ThemedText type="small" themeColor="textSecondary" style={styles.emptyText}>
+                  Add an expense to start tracking
+                </ThemedText>
+              </View>
+            ) : (
+              groupExpenses.map((expense) => (
+                <ExpenseCard
+                  key={expense.id}
+                  expense={expense}
+                  onPress={() => router.push(`/expense/${expense.id}`)}
+                />
+              ))
+            )}
           </View>
         </ScrollView>
       </SafeAreaView>
@@ -197,62 +148,19 @@ const styles = StyleSheet.create({
   },
   section: { marginBottom: Spacing.four },
   sectionLabel: {
-    marginBottom: Spacing.one,
+    marginBottom: Spacing.two,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  balanceRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  emptyState: {
     alignItems: 'center',
-    backgroundColor: Colors.light.backgroundElement,
-    borderRadius: BorderRadius,
-    padding: Spacing.three,
-    marginBottom: Spacing.one,
+    paddingVertical: Spacing.five,
   },
-  balanceUser: {
-    flexDirection: 'row',
-    alignItems: 'center',
+  emptyTitle: {
+    marginTop: Spacing.two,
   },
-  balanceAvatar: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: Colors.light.primary,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.two,
-  },
-  balanceAvatarText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '600',
-  },
-  balanceAmount: { fontWeight: '600' },
-  expenseItem: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.light.backgroundElement,
-    borderRadius: BorderRadius,
-    padding: Spacing.three,
-    marginBottom: Spacing.one,
-  },
-  expensePressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
-  },
-  expenseIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: '#DCFCE7',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: Spacing.two,
-  },
-  expenseInfo: { flex: 1 },
-  expenseAmount: {
-    fontWeight: '600',
-    marginLeft: Spacing.two,
+  emptyText: {
+    textAlign: 'center',
+    marginTop: Spacing.one,
   },
 });

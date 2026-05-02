@@ -1,8 +1,12 @@
 export type SplitType = 'equal' | 'exact' | 'percentage' | 'ratio';
 
+export type ExpenseCategory = 'food' | 'rent' | 'petrol' | 'travel' | 'shopping' | 'utilities' | 'entertainment' | 'other';
+
 export interface ExpenseSplit {
   userId: string;
   owedAmount: number;
+  percentage?: number;
+  ratio?: number;
 }
 
 export interface Expense {
@@ -11,10 +15,12 @@ export interface Expense {
   paidBy: string;
   amount: number;
   note: string;
-  category: string;
+  category: ExpenseCategory;
   splitType: SplitType;
-  splits: ExpenseSplit[];
+  date: string;
+  createdBy: string;
   createdAt: string;
+  splits?: ExpenseSplit[];
 }
 
 export interface ExpenseInput {
@@ -22,8 +28,13 @@ export interface ExpenseInput {
   paidBy: string;
   amount: number;
   note: string;
-  category: string;
+  category: ExpenseCategory;
   splitType: SplitType;
+  date: string;
+  splits: ExpenseSplit[];
+}
+
+export interface ExpenseWithSplits extends Expense {
   splits: ExpenseSplit[];
 }
 

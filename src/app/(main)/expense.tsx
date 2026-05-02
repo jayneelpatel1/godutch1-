@@ -1,39 +1,58 @@
 import { useState } from 'react';
 import { StyleSheet, View, TextInput, Pressable, ScrollView } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import SplitSelector from '@/components/SplitSelector';
+import { useExpenseStore } from '@/store/expenseStore';
+import type { ExpenseSplit, ExpenseCategory, SplitType } from '@/types/expense';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 
-const categories = [
-  { id: 'food', label: 'Food', icon: 'restaurant-outline' as const },
-  { id: 'travel', label: 'Travel', icon: 'airplane-outline' as const },
-  { id: 'groceries', label: 'Groceries', icon: 'cart-outline' as const },
-  { id: 'entertainment', label: 'Fun', icon: 'film-outline' as const },
-  { id: 'bills', label: 'Bills', icon: 'receipt-outline' as const },
-  { id: 'drinks', label: 'Drinks', icon: 'cafe-outline' as const },
-  { id: 'shopping', label: 'Shopping', icon: 'bag-outline' as const },
-  { id: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline' as const },
-];
-
-const splitTypes = [
-  { id: 'equal', label: 'Equal' },
-  { id: 'exact', label: 'Exact' },
-  { id: 'percent', label: 'Percent' },
-  { id: 'ratio', label: 'Ratio' },
+const categories: { id: ExpenseCategory; label: string; icon: string }[] = [
+  { id: 'food', label: 'Food', icon: 'restaurant-outline' },
+  { id: 'travel', label: 'Travel', icon: 'airplane-outline' },
+  { id: 'shopping', label: 'Shopping', icon: 'bag-outline' },
+  { id: 'entertainment', label: 'Fun', icon: 'film-outline' },
+  { id: 'utilities', label: 'Bills', icon: 'receipt-outline' },
+  { id: 'petrol', label: 'Petrol', icon: 'car-outline' },
+  { id: 'rent', label: 'Rent', icon: 'home-outline' },
+  { id: 'other', label: 'Other', icon: 'ellipsis-horizontal-outline' },
 ];
 
 export default function AddExpenseScreen() {
+  const router = useRouter();
+  const params = useLocalSearchParams<{ groupId?: string }>();
+  const { addExpense } = useExpenseStore();
+
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
-  const [category, setCategory] = useState('');
-  const [splitType, setSplitType] = useState('equal');
+  const [category, setCategory] = useState<ExpenseCategory>('food');
+  const [splitType, setSplitType] = useState<SplitType>('equal');
+  const [splits, setSplits] = useState<ExpenseSplit[]>([]);
 
   const handleAddExpense = () => {
     if (!amount || !note || !category) return;
+
+    const expense = {
+      id: Date.now().toString(),
+      groupId: params.groupId || 'default-group',
+      paidBy: 'current-user',
+      amount: parseFloat(amount),
+      note,
+      category,
+      splitType,
+      date: new Date().toISOString().split('T')[0],
+      createdBy: 'current-user',
+      createdAt: new Date().toISOString(),
+      splits: splits.length > 0 ? splits : [
+        { userId: 'current-user', owedAmount: parseFloat(amount) }
+      ],
+    };
+
+    addExpense(expense);
     router.back();
   };
 
@@ -87,7 +106,7 @@ export default function AddExpenseScreen() {
                   onPress={() => setCategory(cat.id)}>
                   <View style={[styles.categoryIconWrap, category === cat.id && styles.categoryIconWrapSelected]}>
                     <Ionicons
-                      name={cat.icon}
+                      name={cat.icon as any}
                       size={22}
                       color={category === cat.id ? '#FFFFFF' : Colors.light.primary}
                     />
@@ -108,25 +127,14 @@ export default function AddExpenseScreen() {
             <ThemedText type="small" themeColor="textSecondary" style={styles.label}>
               SPLIT TYPE
             </ThemedText>
-            <View style={styles.splitTypeRow}>
-              {splitTypes.map((type) => (
-                <Pressable
-                  key={type.id}
-                  style={[
-                    styles.splitTypeButton,
-                    splitType === type.id && styles.splitTypeSelected,
-                  ]}
-                  onPress={() => setSplitType(type.id)}>
-                  <ThemedText
-                    style={[
-                      styles.splitTypeText,
-                      splitType === type.id && styles.splitTypeTextSelected,
-                    ]}>
-                    {type.label}
-                  </ThemedText>
-                </Pressable>
-              ))}
-            </View>
+            <SplitSelector
+              type={splitType}
+              onTypeChange={setSplitType}
+              amount={parseFloat(amount) || 0}
+              members={['current-user', 'user2', 'user3']}
+              splits={splits}
+              onSplitsChange={setSplits}
+            />
           </View>
 
           <Pressable
@@ -218,29 +226,6 @@ const styles = StyleSheet.create({
   categoryLabelSelected: {
     color: Colors.light.primary,
     fontWeight: '600',
-  },
-  splitTypeRow: {
-    flexDirection: 'row',
-    gap: Spacing.one,
-  },
-  splitTypeButton: {
-    flex: 1,
-    paddingVertical: Spacing.two,
-    paddingHorizontal: Spacing.one,
-    borderRadius: 8,
-    backgroundColor: Colors.light.backgroundElement,
-    alignItems: 'center',
-  },
-  splitTypeSelected: {
-    backgroundColor: Colors.light.primary,
-  },
-  splitTypeText: {
-    fontSize: 13,
-    fontWeight: '500',
-    color: Colors.light.text,
-  },
-  splitTypeTextSelected: {
-    color: '#FFFFFF',
   },
   button: {
     backgroundColor: Colors.light.primary,

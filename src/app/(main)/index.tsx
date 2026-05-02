@@ -10,7 +10,7 @@ import { useGroupStore } from '@/store/groupStore';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 
 export default function HomeScreen() {
-  const { groups, addGroup } = useGroupStore();
+  const { groups } = useGroupStore();
 
   const handleGroupPress = (groupId: string) => {
     router.push(`/group/${groupId}`);
