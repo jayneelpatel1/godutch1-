@@ -6,12 +6,18 @@ import { Ionicons } from '@expo/vector-icons';
 import GroupCard from '@/components/group-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { mockGroups } from '@/data/mockData';
+import { useGroupStore } from '@/store/groupStore';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 
 export default function HomeScreen() {
+  const { groups, addGroup } = useGroupStore();
+
   const handleGroupPress = (groupId: string) => {
-    router.push(`/group/${groupId}` as any);
+    router.push(`/group/${groupId}`);
+  };
+
+  const handleCreateGroup = () => {
+    router.push('/create-group');
   };
 
   return (
@@ -21,31 +27,31 @@ export default function HomeScreen() {
           <View>
             <ThemedText type="title">Groups</ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              {mockGroups.length} groups
+              {groups.length} groups
             </ThemedText>
           </View>
-          <Pressable style={styles.createButton}>
-            <Ionicons name="add-circle" size={24} color={Colors.light.primary} />
-          </Pressable>
+          <Pressable style={styles.createButton} onPress={handleCreateGroup}>
+             <Ionicons name="add-circle" size={24} color={Colors.light.primary} />
+           </Pressable>
         </View>
 
         <ScrollView
           style={styles.scrollView}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
-          {mockGroups.length === 0 ? (
+          {groups.length === 0 ? (
             <View style={styles.emptyState}>
               <Ionicons name="people-outline" size={48} color={Colors.light.textSecondary} />
               <ThemedText type="subtitle" style={styles.emptyTitle}>No groups yet</ThemedText>
               <ThemedText type="small" themeColor="textSecondary" style={styles.emptyText}>
                 Create a group to start splitting expenses
               </ThemedText>
-              <Pressable style={styles.emptyButton}>
+              <Pressable style={styles.emptyButton} onPress={handleCreateGroup}>
                 <ThemedText style={styles.emptyButtonText}>Create Group</ThemedText>
               </Pressable>
             </View>
           ) : (
-            mockGroups.map((group) => (
+            groups.map((group) => (
               <GroupCard
                 key={group.id}
                 group={group}

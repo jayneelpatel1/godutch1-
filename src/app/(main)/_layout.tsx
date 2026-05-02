@@ -50,16 +50,13 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="profile"
+          name="group"
           options={{
-            title: 'Profile',
-            tabBarIcon: ({ color }) => (
-              <Ionicons name="person-outline" size={24} color={color} />
-            ),
+            href: null,
           }}
         />
         <Tabs.Screen
-          name="group"
+          name="create-group"
           options={{
             href: null,
           }}

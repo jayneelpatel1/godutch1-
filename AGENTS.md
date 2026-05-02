@@ -426,7 +426,7 @@ Optimize to:
 
 # Development Milestones
 
-## Milestone 1
+## Milestone 1 ✅ [COMPLETED]
 
 UI-only screens with dummy data.
 
@@ -434,11 +434,11 @@ UI-only screens with dummy data.
 
 Authentication and backend setup.
 
-## Milestone 3
+## Milestone 3 ✅ [COMPLETED]
 
 Group management system.
 
-## Milestone 4
+## Milestone 4 
 
 Expense management system.
 
