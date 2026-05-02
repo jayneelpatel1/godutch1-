@@ -65,7 +65,7 @@ export default function AddExpenseScreen() {
               AMOUNT
             </ThemedText>
             <View style={styles.amountRow}>
-              <ThemedText style={styles.currency}>$</ThemedText>
+              <ThemedText style={styles.currency}>₹</ThemedText>
               <TextInput
                 style={styles.amountInput}
                 value={amount}

@@ -54,7 +54,7 @@ export default function ExpenseCard({ expense, onPress, showGroup }: ExpenseCard
       </View>
       <View style={styles.rightSection}>
         <ThemedText type="subtitle" style={styles.amount}>
-          ${expense.amount.toFixed(2)}
+           ₹${expense.amount.toFixed(2)}
         </ThemedText>
       </View>
     </Pressable>

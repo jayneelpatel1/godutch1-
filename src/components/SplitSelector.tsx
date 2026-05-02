@@ -103,7 +103,7 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
               )}
               {type === 'equal' && (
                 <ThemedText style={styles.equalAmount}>
-                  ${split?.owedAmount?.toFixed(2) || '0.00'}
+                   ₹${split?.owedAmount?.toFixed(2) || '0.00'}
                 </ThemedText>
               )}
             </View>

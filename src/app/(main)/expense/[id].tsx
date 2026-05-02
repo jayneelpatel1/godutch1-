@@ -61,7 +61,7 @@ export default function ExpenseDetailsScreen() {
               />
             </View>
             <ThemedText type="title" style={styles.amount}>
-              ${expense.amount.toFixed(2)}
+               ₹${expense.amount.toFixed(2)}
             </ThemedText>
             <ThemedText type="subtitle" style={styles.note}>
               {expense.note || 'No description'}
@@ -85,7 +85,7 @@ export default function ExpenseDetailsScreen() {
               <View key={split.userId} style={styles.splitRow}>
                 <ThemedText style={styles.splitUser}>{split.userId}</ThemedText>
                 <ThemedText style={styles.splitAmount}>
-                  ${split.owedAmount.toFixed(2)}
+                   ₹${split.owedAmount.toFixed(2)}
                 </ThemedText>
               </View>
             ))}

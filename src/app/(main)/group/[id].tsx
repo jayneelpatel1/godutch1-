@@ -50,7 +50,7 @@ export default function GroupDetailsScreen() {
             <View style={styles.netBalance}>
               <ThemedText type="small" themeColor="textSecondary">Total expenses</ThemedText>
               <ThemedText type="subtitle" style={styles.netAmount}>
-                ${groupExpenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}
+                 ₹${groupExpenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}
               </ThemedText>
             </View>
           </View>
