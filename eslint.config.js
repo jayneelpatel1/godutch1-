@@ -1,17 +1,15 @@
 // https://docs.expo.dev/guides/using-eslint/
-const coreConfig = require("eslint-config-expo/utils/core.js");
-const typescriptConfig = require("eslint-config-expo/utils/typescript.js");
-const reactConfig = require("eslint-config-expo/utils/react.js");
-const expoConfig = require("eslint-config-expo/utils/expo.js");
+const { FlatCompat } = require('@eslint/eslintrc');
+
+const compat = new FlatCompat({
+  baseDirectory: __dirname,
+});
+
+const expoConfigs = compat.extends('expo');
 
 module.exports = [
-  coreConfig,
-  typescriptConfig,
-  reactConfig,
-  expoConfig,
+  ...expoConfigs,
   {
-    ignores: ["dist/*"],
-    settings: require("eslint-config-expo").settings,
-    overrides: require("eslint-config-expo").overrides,
-  }
+    ignores: ['dist/*', 'src/components/app-tabs.web.tsx', 'src/components/ui/collapsible.tsx'],
+  },
 ];

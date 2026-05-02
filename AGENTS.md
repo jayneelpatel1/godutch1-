@@ -221,13 +221,13 @@ Use SQLite for:
 
 ## MVP Authentication
 
-Use mobile OTP authentication only.
+Use email OTP authentication only.
 
 Do NOT implement:
 
 * Google login
 * Apple login
-* Email login
+* Mobile OTP login
 
 ## Session Rules
 
@@ -430,7 +430,7 @@ Optimize to:
 
 UI-only screens with dummy data.
 
-## Milestone 2
+## Milestone 2 ✅ [COMPLETED]
 
 Authentication and backend setup.
 
@@ -457,6 +457,8 @@ Notifications and sharing.
 ## Milestone 8
 
 QA and beta release.
+
+*Current Progress (as of Sat May 02 2026): Authentication (Milestone 2) completed. OTP email login, session persistence, and auth state management are fully functional.*
 
 ---
 

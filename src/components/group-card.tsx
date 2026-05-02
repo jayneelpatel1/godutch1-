@@ -1,6 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from './themed-text';
-import { mockGroups, mockExpenses, mockUsers, getGroupBalance, type Group } from '@/data/mockData';
+import { mockExpenses, mockUsers, getGroupBalance, type Group } from '@/data/mockData';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 
 interface GroupCardProps {

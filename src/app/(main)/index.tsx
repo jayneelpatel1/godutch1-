@@ -7,7 +7,7 @@ import GroupCard from '@/components/group-card';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { mockGroups } from '@/data/mockData';
-import { Colors, Spacing, BorderRadius, MaxContentWidth } from '@/constants/theme';
+import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 
 export default function HomeScreen() {
   const handleGroupPress = (groupId: string) => {

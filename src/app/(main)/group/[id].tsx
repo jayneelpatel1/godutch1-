@@ -10,7 +10,6 @@ import {
   mockExpenses,
   mockUsers,
   getBalances,
-  type Group,
 } from '@/data/mockData';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 

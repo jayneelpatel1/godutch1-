@@ -6,7 +6,6 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { mockGroups, mockUsers, mockExpenses } from '@/data/mockData';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 
 const categories = [

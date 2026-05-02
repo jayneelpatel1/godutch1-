@@ -1,18 +1,37 @@
-import { StyleSheet, View, ScrollView } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
+import { router } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { mockUsers, currentUserId, mockGroups, mockExpenses } from '@/data/mockData';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { useAuthStore } from '@/store/authStore';
+import { signOut } from '@/services/authService';
 
 export default function ProfileScreen() {
-  const user = mockUsers.find((u) => u.id === currentUserId);
-  const groupCount = mockGroups.length;
-  const expenseCount = mockExpenses.length;
-  const settledCount = mockExpenses.filter((e) => e.splitType === 'equal' && e.amount < 50).length;
+  const user = useAuthStore((state) => state.user);
+  const clearAuth = useAuthStore((state) => state.clearAuth);
+
+  const handleLogout = async () => {
+    Alert.alert(
+      'Sign Out',
+      'Are you sure you want to sign out?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Sign Out',
+          style: 'destructive',
+          onPress: async () => {
+            await signOut();
+            clearAuth();
+            router.replace('/(auth)/login');
+          },
+        },
+      ]
+    );
+  };
 
   return (
     <ThemedView style={styles.container}>
@@ -29,52 +48,22 @@ export default function ProfileScreen() {
               ) : (
                 <View style={styles.avatarPlaceholder}>
                   <ThemedText style={styles.avatarText}>
-                    {user?.name.charAt(0).toUpperCase()}
+                    {user?.name?.charAt(0).toUpperCase() || '?'}
                   </ThemedText>
                 </View>
               )}
             </View>
             <ThemedText type="title" style={styles.name}>
-              {user?.name}
+              {user?.name || 'User'}
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary">
-              {user?.phone}
+              {user?.email || 'No email'}
             </ThemedText>
           </View>
 
           <View style={styles.section}>
             <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
-              STATS
-            </ThemedText>
-            <View style={styles.statsCard}>
-              <View style={styles.stat}>
-                <ThemedText type="title" style={styles.statNumber}>{groupCount}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Groups
-                </ThemedText>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.stat}>
-                <ThemedText type="title" style={styles.statNumber}>{expenseCount}</ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Expenses
-                </ThemedText>
-              </View>
-              <View style={styles.statDivider} />
-              <View style={styles.stat}>
-                <ThemedText type="title" style={[styles.statNumber, { color: Colors.light.success }]}>
-                  {settledCount}
-                </ThemedText>
-                <ThemedText type="small" themeColor="textSecondary">
-                  Settled
-                </ThemedText>
-              </View>
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
-              APP INFO
+              ACCOUNT
             </ThemedText>
             <View style={styles.infoCard}>
               <View style={styles.infoRow}>
@@ -84,15 +73,13 @@ export default function ProfileScreen() {
                 </View>
                 <ThemedText themeColor="textSecondary">1.0.0</ThemedText>
               </View>
-              <View style={styles.infoRow}>
-                <View style={styles.infoLabelRow}>
-                  <Ionicons name="construct-outline" size={16} color={Colors.light.textSecondary} />
-                  <ThemedText style={styles.infoLabel}>Build</ThemedText>
-                </View>
-                <ThemedText themeColor="textSecondary">2024.1</ThemedText>
-              </View>
             </View>
           </View>
+
+          <Pressable style={styles.logoutButton} onPress={handleLogout}>
+            <Ionicons name="log-out-outline" size={20} color={Colors.light.danger} />
+            <ThemedText style={styles.logoutText}>Sign Out</ThemedText>
+          </Pressable>
         </ScrollView>
       </SafeAreaView>
     </ThemedView>
@@ -142,29 +129,6 @@ const styles = StyleSheet.create({
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
-  statsCard: {
-    flexDirection: 'row',
-    backgroundColor: Colors.light.backgroundElement,
-    borderRadius: BorderRadius,
-    padding: Spacing.three,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  stat: {
-    flex: 1,
-    alignItems: 'center',
-  },
-  statDivider: {
-    width: 1,
-    backgroundColor: Colors.light.backgroundSelected,
-    marginVertical: Spacing.two,
-  },
-  statNumber: {
-    fontWeight: '700',
-  },
   infoCard: {
     backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
@@ -188,5 +152,20 @@ const styles = StyleSheet.create({
   },
   infoLabel: {
     marginLeft: Spacing.one,
+  },
+  logoutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FEE2E2',
+    borderRadius: BorderRadius,
+    paddingVertical: Spacing.three,
+    gap: Spacing.two,
+    marginTop: Spacing.three,
+  },
+  logoutText: {
+    color: Colors.light.danger,
+    fontWeight: '600',
+    fontSize: 16,
   },
 });

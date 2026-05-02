@@ -1,7 +1,7 @@
 export interface User {
   id: string;
   name: string;
-  phone: string;
+  email: string;
   avatar: string;
 }
 
@@ -38,25 +38,25 @@ export const mockUsers: User[] = [
   {
     id: 'user1',
     name: 'You',
-    phone: '+1234567890',
+    email: 'you@example.com',
     avatar: 'https://i.pravatar.cc/150?img=1',
   },
   {
     id: 'user2',
     name: 'Alice',
-    phone: '+1234567891',
+    email: 'alice@example.com',
     avatar: 'https://i.pravatar.cc/150?img=2',
   },
   {
     id: 'user3',
     name: 'Bob',
-    phone: '+1234567892',
+    email: 'bob@example.com',
     avatar: 'https://i.pravatar.cc/150?img=3',
   },
   {
     id: 'user4',
     name: 'Charlie',
-    phone: '+1234567893',
+    email: 'charlie@example.com',
     avatar: 'https://i.pravatar.cc/150?img=4',
   },
 ];
