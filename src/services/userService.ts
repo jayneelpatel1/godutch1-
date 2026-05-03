@@ -48,6 +48,30 @@ export async function fetchUsersByIds(userIds: string[]): Promise<{ users: (User
   }
 }
 
+export async function updateUser(userId: string, updates: { name?: string; avatar?: string }): Promise<{ success: boolean; error: string | null }> {
+  try {
+    console.log('[userService] Updating user:', userId, updates);
+
+    const { data, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      console.error('[userService] updateUser Supabase error:', error);
+      return { success: false, error: error.message };
+    }
+
+    console.log('[userService] User updated successfully:', data);
+    return { success: true, error: null };
+  } catch (e: any) {
+    console.error('[userService] updateUser failed:', e);
+    return { success: false, error: e.message || 'Failed to update user.' };
+  }
+}
+
 export async function createOrUpdateUser(authUser: AuthUser): Promise<{ success: boolean; error: string | null }> {
   try {
     console.log('[userService] Creating/updating user:', authUser);

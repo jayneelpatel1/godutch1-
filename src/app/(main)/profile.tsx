@@ -10,6 +10,7 @@ import { ThemedView } from '@/components/themed-view';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { signOut } from '@/services/authService';
+import { updateUser } from '@/services/userService';
 
 export default function ProfileScreen() {
   const user = useAuthStore((state) => state.user);
@@ -19,10 +20,25 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
 
-  const handleSaveName = () => {
+  const handleSaveName = async () => {
     if (!user) return;
+    
+    // Update local state immediately
     setUser({ ...user, name });
     setIsEditing(false);
+    
+    // Save to Supabase database
+    try {
+      const result = await updateUser(user.id, { name });
+      if (result.error) {
+        console.error('[Profile] Failed to update name:', result.error);
+        if (Platform.OS === 'web') {
+          window.alert('Failed to save name: ' + result.error);
+        }
+      }
+    } catch (e: any) {
+      console.error('[Profile] Error updating name:', e);
+    }
   };
 
   const handleLogout = () => {
