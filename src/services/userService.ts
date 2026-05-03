@@ -26,6 +26,28 @@ export async function checkUserByEmail(email: string): Promise<{ exists: boolean
   }
 }
 
+export async function fetchUsersByIds(userIds: string[]): Promise<{ users: (User & { id: string })[]; error: string | null }> {
+  try {
+    if (!userIds || userIds.length === 0) {
+      return { users: [], error: null };
+    }
+
+    const { data, error } = await supabase
+      .from('users')
+      .select('id, name, email, avatar')
+      .in('id', userIds);
+
+    if (error) {
+      return { users: [], error: error.message };
+    }
+
+    return { users: (data || []) as (User & { id: string })[], error: null };
+  } catch (e: any) {
+    console.error('[userService] fetchUsersByIds failed:', e);
+    return { users: [], error: e.message || 'Failed to fetch users.' };
+  }
+}
+
 export async function createOrUpdateUser(authUser: AuthUser): Promise<{ success: boolean; error: string | null }> {
   try {
     console.log('[userService] Creating/updating user:', authUser);

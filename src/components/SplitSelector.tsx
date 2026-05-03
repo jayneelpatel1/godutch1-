@@ -8,7 +8,7 @@ interface SplitSelectorProps {
   type: SplitType;
   onTypeChange: (type: SplitType) => void;
   amount: number;
-  members: string[];
+  members: { userId: string; name: string }[];
   splits: ExpenseSplit[];
   onSplitsChange: (splits: ExpenseSplit[]) => void;
 }
@@ -25,9 +25,9 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
     onTypeChange(newType);
     if (newType === 'equal' && members.length > 0) {
       const perPerson = amount / members.length;
-      onSplitsChange(members.map((userId) => ({ userId, owedAmount: perPerson })));
+      onSplitsChange(members.map((m) => ({ userId: m.userId, owedAmount: perPerson })));
     } else {
-      onSplitsChange(members.map((userId) => ({ userId, owedAmount: 0 })));
+      onSplitsChange(members.map((m) => ({ userId: m.userId, owedAmount: 0 })));
     }
   };
 
@@ -53,6 +53,11 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
     onSplitsChange(newSplits);
   };
 
+  const getMemberName = (userId: string): string => {
+    const member = members.find((m) => m.userId === userId);
+    return member?.name || userId;
+  };
+
   return (
     <View style={styles.container}>
       <View style={styles.typeRow}>
@@ -69,16 +74,16 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
       </View>
 
       <View style={styles.memberList}>
-        {members.map((userId) => {
-          const split = splits.find((s) => s.userId === userId);
+        {members.map((member) => {
+          const split = splits.find((s) => s.userId === member.userId);
           return (
-            <View key={userId} style={styles.memberRow}>
-              <ThemedText style={styles.memberName}>{userId}</ThemedText>
+            <View key={member.userId} style={styles.memberRow}>
+              <ThemedText style={styles.memberName}>{getMemberName(member.userId)}</ThemedText>
               {type === 'exact' && (
                 <TextInput
                   style={styles.input}
                   value={split?.owedAmount?.toString() || ''}
-                  onChangeText={(val) => updateSplitValue(userId, parseFloat(val) || 0)}
+                  onChangeText={(val) => updateSplitValue(member.userId, parseFloat(val) || 0)}
                   keyboardType="decimal-pad"
                   placeholder="0.00"
                 />
@@ -87,7 +92,7 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
                 <TextInput
                   style={styles.input}
                   value={split?.percentage?.toString() || ''}
-                  onChangeText={(val) => updateSplitPercentage(userId, parseFloat(val) || 0)}
+                  onChangeText={(val) => updateSplitPercentage(member.userId, parseFloat(val) || 0)}
                   keyboardType="decimal-pad"
                   placeholder="0%"
                 />
@@ -96,14 +101,14 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
                 <TextInput
                   style={styles.input}
                   value={split?.ratio?.toString() || ''}
-                  onChangeText={(val) => updateSplitRatio(userId, parseFloat(val) || 0)}
+                  onChangeText={(val) => updateSplitRatio(member.userId, parseFloat(val) || 0)}
                   keyboardType="decimal-pad"
                   placeholder="1"
                 />
               )}
               {type === 'equal' && (
                 <ThemedText style={styles.equalAmount}>
-                   ₹${split?.owedAmount?.toFixed(2) || '0.00'}
+                   ₹{split?.owedAmount?.toFixed(2) || '0.00'}
                 </ThemedText>
               )}
             </View>

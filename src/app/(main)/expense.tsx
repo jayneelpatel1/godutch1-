@@ -12,6 +12,7 @@ import { useGroupStore } from '@/store/groupStore';
 import { useCreateExpense } from '@/hooks/useExpenses';
 import { useUpsertUser } from '@/hooks/useUser';
 import { showToast } from '@/components/Toast';
+import { fetchUsersByIds } from '@/services/userService';
 import type { ExpenseSplit, ExpenseCategory, SplitType } from '@/types/expense';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 
@@ -37,8 +38,9 @@ export default function AddExpenseScreen() {
   const [category, setCategory] = useState<ExpenseCategory>('food');
   const [splitType, setSplitType] = useState<SplitType>('equal');
   const [splits, setSplits] = useState<ExpenseSplit[]>([]);
+  const [memberNames, setMemberNames] = useState<{ userId: string; name: string }[]>([]);
 
-  const groupId = params.groupId || 'default-group';
+  const groupId = params.groupId || '';
   const createExpenseMutation = useCreateExpense(groupId);
   const upsertUserMutation = useUpsertUser();
 
@@ -46,6 +48,21 @@ export default function AddExpenseScreen() {
   const memberIds = group
     ? group.members.map((m) => m.user_id)
     : ['current-user', 'user2', 'user3'];
+
+  // Fetch user names for members
+  React.useEffect(() => {
+    if (!group?.members || group.members.length === 0) return;
+    
+    const userIds = group.members.map((m) => m.user_id);
+    fetchUsersByIds(userIds).then((result) => {
+      if (result.users) {
+        const names = result.users.map((u) => ({ userId: u.id, name: u.name }));
+        setMemberNames(names);
+      }
+    }).catch((e) => {
+      console.error('[expense] Failed to fetch user names:', e);
+    });
+  }, [group?.id]);
 
   const handleAddExpense = async () => {
     if (!amount || !note || !category || !user?.id) return;
@@ -161,7 +178,7 @@ export default function AddExpenseScreen() {
               type={splitType}
               onTypeChange={setSplitType}
               amount={parseFloat(amount) || 0}
-              members={memberIds}
+              members={memberNames}
               splits={splits}
               onSplitsChange={setSplits}
             />
