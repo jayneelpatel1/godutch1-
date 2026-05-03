@@ -262,17 +262,59 @@ refactor: switch to online-only mode
 
 ---
 
-# 🤖 AI Behavior Rules (OpenCode)
+# 🚀 GitHub Rules (CRITICAL)
 
-* Always check for reusable components first
-* Never create duplicates
-* Prefer props over variants
-* Ensure cross-platform compatibility
-* Follow folder structure
-* Add comments for reusable components
-* Use React Query for data fetching
-* Use Zustand for state management
-* **Online-only mode: No SQLite or local database**
+## ⛔️ NEVER Commit Without Asking
+
+**YOU MUST:**
+1. **Always ask the user before committing**
+   - "Should I commit these changes?"
+   - Show what files will be committed
+   - Show the commit message you plan to use
+
+2. **Always ask the user before pushing**
+   - "Should I push to GitHub?"
+   - Confirm the branch name
+   - Confirm the remote (origin/master)
+
+3. **Wait for explicit user approval**
+   - Only commit after user says "yes" or "commit"
+   - Only push after user says "yes" or "push"
+
+## ✅ Commit Checklist (Ask User First!)
+
+* [ ] Did you ask the user first?
+* [ ] Did user approve the commit?
+* [ ] Are all files staged correctly?
+* [ ] Is commit message following format?
+* [ ] Did you run lint/typecheck?
+* [ ] Is user ready to push?
+
+## 📤 Push Checklist (Ask User First!)
+
+* [ ] Did you ask the user first?
+* [ ] Did user approve the push?
+* [ ] Is commit already created?
+* [ ] Is branch correct (master/main)?
+* [ ] Is remote correct (origin)?
+
+## 💬 What To Say To User:
+
+**Before committing:**
+```
+I've made these changes:
+- Modified: src/components/ExpenseCard.tsx
+- Updated: AGENTS.md
+
+Should I commit these changes? 
+Commit message: "fix: show user names instead of IDs in expense splits"
+```
+
+**Before pushing:**
+```
+I've created commit: 57d643f
+Should I push to GitHub (origin/master)?
+```
 
 ---
 
