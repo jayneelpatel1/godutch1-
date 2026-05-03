@@ -1,580 +1,332 @@
+# 🤖 AGENTS.md — Go Dutch (Cross-Platform OpenCode Instructions)
+
+⚠️ **PRIORITY RULE:** Always prefer component reuse over new creation.
+
+---
+
 # 📌 Project Overview
 
-Go Dutch is a **cross-platform expense-sharing mobile app** built with React Native.
-
-### Core Capabilities
-- Create and manage groups
-- Add and split expenses
-- Track balances
-- Optimize settlements
-- Work offline-first (critical feature)
+**Project Name:** Go Dutch
+**Type:** Cross-platform app (Android + iOS + Web)
+**Framework:** React Native + Expo (Web enabled)
+**Purpose:** Expense sharing between friends/groups
 
 ---
 
-# 🧭 Product Philosophy
+# 🎯 Core Principles
 
-### Primary Goal
-> Add an expense in under **5 seconds**
-
-### Principles
-- Speed > Features  
-- Simplicity > Flexibility  
-- Reliability > Perfection  
+* Cross-platform compatibility (Android, iOS, Web)
+* Reusability first
+* Clean and scalable architecture
+* Minimal duplication
+* AI-friendly structure
+* Maintainable code
 
 ---
-
-
 
 # 🧱 Tech Stack
 
-## Frontend
-- React Native  
-- TypeScript  
-- Expo Router (file-based navigation)  
-- Zustand (client state)  
-- React Query (server state)  
-
-## Backend
-- Firebase (Auth - Google SSO) learn : https://firebase.google.com/docs/auth?authuser=0
-- Supabase (DB + APIs)  
-- PostgreSQL  
-
-## Local Storage
-- SQLite (offline-first storage)  
-
-## Notifications
-- Firebase Cloud Messaging (FCM)  
+* React Native (Expo + Expo Web)
+* TypeScript (strict mode)
+* React Navigation
+* Firebase Authentication
+* Supabase (PostgreSQL backend)
+* React Query (TanStack Query)
+* Zustand (state management)
+* Responsive design (for web)
 
 ---
 
-# 📂 Project Structure
+# 🌐 Cross-Platform Rules (VERY IMPORTANT)
 
-```
+## 1. Platform-Agnostic Code First
 
-src/
-├── assets/
-├── components/
-├── constants/
-├── data/
-├── hooks/
-├── navigation/
-├── screens/
-├── services/
-├── store/
-├── theme/
-├── types/
-├── utils/
-└── database/
+* Use core components:
 
-```
+  * `View`, `Text`, `Pressable`, `ScrollView`
 
 ---
 
-# 🔄 Data Flow Architecture (IMPORTANT)
+## 2. Platform Checks (Only When Required)
 
-```
+```jsx
+import { Platform } from 'react-native';
 
-UI (Screens / Components)
-↓
-Hooks (useExpenses, useGroups)
-↓
-Services (API + DB logic)
-↓
-├── React Query (server state)
-├── Zustand (UI/local state)
-└── SQLite (offline storage)
-
-```
-
-### Rules
-- ❌ No API calls in components  
-- ❌ No DB access in UI  
-- ✅ All logic goes through hooks + services  
-
----
-
-# 🧭 Navigation Rules
-
-## Use Expo Router ONLY
-
-## Structure
-
-```
-
-app/
-├── (auth)/
-│   ├── login.tsx (Google SSO via Firebase)
-├── (main)/
-│   ├── home.tsx
-│   ├── group/
-│   │   ├── create.tsx
-│   │   ├── [id].tsx
-│   ├── expense/
-│   │   ├── add.tsx
-│   │   ├── [id].tsx
-│   ├── settlement.tsx
-│   ├── activity.tsx
-│   ├── profile.tsx
-
-````
-
----
-
-# 🧠 State Management Rules
-
-## Zustand (Client State)
-Use for:
-- Auth state  
-- UI state  
-- Temporary data  
-
-## React Query (Server State)
-Use for:
-- API calls  
-- Caching  
-- Syncing  
-
----
-
-# 📡 Offline-First Architecture (CRITICAL)
-
-## Core Principle
-> Always write locally first → sync later
-
----
-
-## SQLite Tables
-
-### Cached Data
-- groups  
-- expenses  
-- members  
-
-### Sync Queue
-
-```sql
-pending_sync:
-- id
-- type (CREATE / UPDATE / DELETE)
-- entity (expense / group / settlement)
-- payload (JSON)
-- status (pending / syncing / failed)
-- retry_count
-- created_at
-````
-
----
-
-## Sync Flow
-
-1. Save to SQLite
-2. Add to sync queue
-3. Update UI instantly
-4. Sync in background
-
----
-
-## Sync Rules
-
-* FIFO processing
-* Retry max 3 times
-* Use UUIDs
-* Idempotent APIs
-
----
-
-## Conflict Resolution
-
-| Case             | Rule            |
-| ---------------- | --------------- |
-| Edit conflict    | Last write wins |
-| Delete vs update | Delete wins     |
-| Server mismatch  | Server wins     |
-
----
-
-# 💰 Balance Engine
-
-## Step 1: Net Balance
-
-```
-balance = paid - owed
-```
-
-## Step 2: Settlement
-
-* Split into creditors (+) and debtors (-)
-* Match largest values
-* Settle minimum amount
-
-### Example
-
-```
-A: +500
-B: -300
-C: -200
-
-B → A: 300
-C → A: 200
-```
-
----
-
-# 🌐 API / Service Layer
-
-All APIs must go through:
-
-```
-src/services/
-```
-
-### Example
-
-```ts
-export const createExpense = async (data) => {
-  // Save locally
-  // Add to sync queue
-  // Return response
-};
-```
-
----
-
-# ⚠️ Error Handling
-
-## Types
-
-* Network Error
-* Validation Error
-* Server Error
-* Sync Error
-
-## Rules
-
-* Show user-friendly messages
-* Provide retry option
-* Never crash
-
-Example:
-
-> "No internet. Expense saved and will sync later."
-
----
-
-# 🎨 UI/UX Guidelines
-
-## Design
-
-* Minimal
-* Fast
-* Clean
-
-## Rules
-
-* Minimal taps
-* Large touch targets
-* Consistent spacing
-
----
-
-# 🎯 Components
-
-### Buttons
-
-* PrimaryButton
-* SecondaryButton
-* IconButton
-
-### Cards
-
-* GroupCard
-* ExpenseCard
-* BalanceCard
-
-### Inputs
-* TextInput
-* SearchInput
-
----
-
-# 🎨 Styling
-
-Use ONE:
-
-* NativeWind
-  OR
-* StyleSheet
-
----
-
-## Colors
-
-```
-Primary: #16A34A  
-Background: #FFFFFF  
-Text: #111827  
-Secondary: #F3F4F6  
-```
-
----
-
-# 🔐 Security
-
-* Use Supabase RLS
-* Validate user_id
-* Never trust client
-
----
-
-# ⚡ Performance
-
-## Targets
-
-* App launch < 3s
-* Expense add < 5s
-
-## Optimization
-
-* Use FlatList
-* Memoize components
-* Avoid re-renders
-
----
-
-# 📦 Pagination
-
-Use:
-
-* Cursor-based pagination
-* Lazy loading
-
----
-
-# 🧪 Testing
-
-* Navigation flow
-* Expense calculation
-* Offline sync
-* Validation
-
----
-
-# 🧑‍💻 Code Quality
-
-## Required
-
-* Strict TypeScript
-* No `any`
-* Handle all states
-
-## Avoid
-
-* Deep prop drilling
-* Large components
-* Inline logic
-
----
-
-# 🔧 Logging
-
-## Dev
-
-* console logs
-
-## Future
-
-* Sentry / LogRocket
-
----
-
-# 🚩 Feature Flags (Future)
-
-* Enable/disable features remotely
-
----
-
-# 🚫 Git Commit & Push Rules (MANDATORY)
-
-## Core Rule
-NEVER commit or push code without explicit user permission.
-
-Always ask:
-> "Should I commit these changes?"
-
----
-
-## Commit Flow (STRICT)
-
-Before committing:
-
-1. Explain what changes were made
-2. Show list of modified files
-3. Suggest a commit message
-4. Ask for approval
-
-Only proceed if user says YES
-
----
-
-## Commit Message Format
-
-Use conventional commits:
-
-- feat: new feature
-- fix: bug fix
-- refactor: code improvement
-- chore: minor changes
-- docs: documentation updates
-
-### Examples
-- feat: implement expense creation flow  
-- fix: resolve sync duplication issue  
-- refactor: optimize balance calculation  
-- docs: update AGENTS.md with sync rules  
-
----
-
-## Push Rules
-
-- NEVER push automatically
-- Ask before pushing:
-  > "Should I push these changes?"
-
----
-
-## Branch Rules
-
-Use feature-based branches:
-
-- feature/auth
-- feature/groups
-- feature/expenses
-- feature/balance-engine
-- feature/offline-sync
-- fix/<bug-name>
-
----
-
-## AGENTS.md Update Rule (IMPORTANT)
-
-If any of the following changes occur:
-
-- Architecture updates  
-- New patterns introduced  
-- Folder structure changes  
-- State management changes  
-- Sync logic changes  
-
-👉 Then AGENTS.md MUST be updated.
-
----
-
-## AGENTS.md Update Workflow
-
-1. Modify AGENTS.md
-2. Explain what was updated
-3. Suggest commit message:
-
-Example:
-> docs: update AGENTS.md with offline sync architecture
-
-4. Ask:
-> "Should I commit these documentation updates?"
-
----
-
-## Atomic Commit Rule
-
-Each commit should:
-- Do ONE logical change only
-- Be easy to understand and revert
-
-❌ Bad:
-- "updated many things"
-
-✅ Good:
-- "feat: add group creation screen"
-
----
-
-## Safety Rules
-
-- ❌ Do NOT force push  
-- ❌ Do NOT delete branches without permission  
-- ❌ Do NOT overwrite existing commits  
-
----
-
-## Final Rule
-
-> If unsure, always ask before taking any git action.
----
-
-# 🧩 Milestones
-
-## ✅ Completed
-
-* M1: UI
-* M2: Auth
-* M3: Groups
-* M4: Expenses
-
-## 🔄 Next
-
-* M5: Balance engine
-* M6: Offline sync
-
----
-
-# 🧠 Final Rule
-
-> Prefer a simple working solution over a perfect complex one.
-
-# 📝 Code Commenting Rules (MANDATORY)
-
-## Requirement
-All code generated MUST include meaningful comments.
-
-## Where to Add Comments
-
-### 1. Functions
-- Explain purpose of function
-- Explain inputs/outputs
-
-### 2. Complex Logic
-- Balance calculations
-- Split logic
-- Sync handling
-- Algorithms
-
-### 3. Critical Flows
-- Offline sync
-- API calls
-- Data transformations
-
----
-
-## Example
-
-```ts
-// Calculates net balance for each user in a group
-// Input: list of expenses
-// Output: map of userId → balance
-export const calculateBalances = (expenses) => {
-  // Initialize balance map
-  const balances = {}
-
-  // Loop through each expense
-  for (const expense of expenses) {
-    // Add paid amount to payer
-    balances[expense.paidBy] += expense.amount
-
-    // Subtract owed amount from participants
-    expense.splits.forEach(split => {
-      balances[split.userId] -= split.owedAmount
-    })
-  }
-
-  return balances
+if (Platform.OS === 'web') {
+  // web-specific logic
 }
+```
 
+---
+
+## 3. Responsive Design
+
+* Use flexible layouts:
+
+  * `flex`, `%`, `Dimensions`
+* Avoid fixed sizes
+
+```jsx
+width: '100%'
+maxWidth: 500
+```
+
+---
+
+## 4. Navigation
+
+* Use Expo Router (file-based, web supported)
+
+---
+
+## 5. Styling
+
+* Use StyleSheet
+* UI must work on:
+
+  * Mobile
+  * Tablet
+  * Desktop
+
+---
+
+## 6. Library Selection
+
+✅ Use:
+
+* Expo-supported libraries
+* Cross-platform packages
+* Firebase Auth
+* Supabase JS client
+
+❌ Avoid:
+
+* Platform-specific libraries
+* SQLite/local database (online-only mode)
+
+---
+
+# 📁 Folder Structure
+
+```
+/components/ui        → Generic UI (Button, Input, Card)
+/components/common    → Shared components
+/features/*           → Feature modules
+/hooks                → Reusable logic (React Query + Zustand)
+/services             → API logic (Supabase + Firebase)
+/utils                → Helpers
+/constants            → Static config
+/app                  → Expo Router screens
+  /(auth)            → Authentication screens
+  /(main)            → Main app screens
+```
+
+---
+
+# ♻️ Component Reuse Guidelines
+
+## 🔍 Mandatory Pre-Check
+
+Before creating any component:
+
+1. Search:
+
+   * `/components/ui`
+   * `/components/common`
+   * `/features/*`
+
+2. Ask:
+
+   * Can existing component be reused?
+
+👉 If YES → REUSE
+👉 If NO → Create new
+
+---
+
+## 🧩 Reuse Rules
+
+### Use Props Instead of Duplication
+
+```jsx
+// ❌ BAD
+<ButtonPrimary />
+<ButtonSecondary />
+
+// ✅ GOOD
+<Button variant="primary" />
+<Button variant="secondary" />
+```
+
+---
+
+### Extract Repeated UI
+
+```jsx
+// ❌ BAD
+<View>...</View>
+
+// ✅ GOOD
+<Card>{children}</Card>
+```
+
+---
+
+### Separate Logic
+
+```jsx
+const { data } = useGroups();
+```
+
+---
+
+# 🚫 Anti-Patterns
+
+* Duplicate components
+* Hardcoded values
+* Fixed layouts (break web)
+* Unnecessary platform-specific code
+* Local SQLite/database usage (use Supabase instead)
+
+---
+
+# 🎨 UI/UX Rules
+
+* Mobile-first design
+* Must adapt to web
+* Clean spacing
+* Touch-friendly UI
+
+---
+
+# ⚙️ State Management
+
+* Prefer local state
+* Use Zustand for global state
+* Use React Query for server state
+* Avoid unnecessary re-renders
+
+---
+
+# 🔌 API Rules
+
+* Keep API in `/services`
+* No API calls in UI
+* Use async/await
+* Use Supabase JS client
+* Firebase Auth for authentication
+* Online-only mode (no offline sync)
+
+---
+
+# 🔁 Refactor Rule
+
+If duplication found:
+
+* Refactor immediately
+* Replace with shared component
+
+---
+
+# 💬 Comment Requirement
+
+```js
+// Reusable component
+// Used in: [Screen1, Screen2]
+// Props: title, onClick, variant
+```
+
+---
+
+# 🔄 PR / Commit Rules
+
+## ✅ Checklist
+
+* [ ] Works on Android
+* [ ] Works on iOS
+* [ ] Works on Web
+* [ ] No duplicate components
+* [ ] Responsive UI verified
+* [ ] Online-only mode confirmed
+
+---
+
+## 📝 Commit Format
+
+```
+feat: add reusable component
+refactor: extract shared component
+fix: resolve platform issue
+refactor: switch to online-only mode
+```
+
+---
+
+# 🤖 AI Behavior Rules (OpenCode)
+
+* Always check for reusable components first
+* Never create duplicates
+* Prefer props over variants
+* Ensure cross-platform compatibility
+* Follow folder structure
+* Add comments for reusable components
+* Use React Query for data fetching
+* Use Zustand for state management
+* **Online-only mode: No SQLite or local database**
+
+---
+
+# 🚀 Expected Outcome
+
+* Single codebase for all platforms
+* Faster development
+* Clean architecture
+* Scalable product
+* Supabase backend with Firebase Auth
+* React Query for data management
+
+---
+
+# 🔧 Current Architecture (Milestone 5+)
+
+## Mode: Online-Only
+
+* **No SQLite/local database**
+* **No offline sync** (will be added in Milestone 6 if needed)
+* All data via Supabase
+* Firebase Auth for user authentication
+
+## Key Services:
+
+* `services/supabase.ts` - Supabase client
+* `services/firebaseConfig.ts` - Firebase config
+* `services/googleAuth.ts` - Firebase Auth
+* `services/groupService.ts` - Group CRUD
+* `services/expenseService.ts` - Expense CRUD
+* `services/userService.ts` - User management
+
+## Key Hooks:
+
+* `hooks/useGroups.ts` - Group data with React Query
+* `hooks/useExpenses.ts` - Expense data with React Query
+* `hooks/useUser.ts` - User data management
+
+## State Management:
+
+* `store/authStore.ts` - Auth state (Zustand)
+* `store/groupStore.ts` - Group state (Zustand)
+* `store/expenseStore.ts` - Expense state (Zustand)
+
+---
+
+# 📋 Development Phases
+
+- [x] M1: Project setup + navigation
+- [x] M2: Authentication (Firebase)
+- [x] M3: Group management
+- [x] M4: Expense management
+- [x] M5: Balance engine (current)
+- [ ] M6: Offline sync (optional, deferred)
+- [ ] M7: Polish & deploy
+
+---
