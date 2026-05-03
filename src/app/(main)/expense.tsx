@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { StyleSheet, View, TextInput, Pressable, ScrollView } from 'react-native';
+import { StyleSheet, View, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -7,7 +7,11 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import SplitSelector from '@/components/SplitSelector';
-import { useExpenseStore } from '@/store/expenseStore';
+import { useAuthStore } from '@/store/authStore';
+import { useGroupStore } from '@/store/groupStore';
+import { useCreateExpense } from '@/hooks/useExpenses';
+import { useUpsertUser } from '@/hooks/useUser';
+import { showToast } from '@/components/Toast';
 import type { ExpenseSplit, ExpenseCategory, SplitType } from '@/types/expense';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 
@@ -25,7 +29,8 @@ const categories: { id: ExpenseCategory; label: string; icon: string }[] = [
 export default function AddExpenseScreen() {
   const router = useRouter();
   const params = useLocalSearchParams<{ groupId?: string }>();
-  const { addExpense } = useExpenseStore();
+  const { user } = useAuthStore();
+  const { groups } = useGroupStore();
 
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
@@ -33,28 +38,53 @@ export default function AddExpenseScreen() {
   const [splitType, setSplitType] = useState<SplitType>('equal');
   const [splits, setSplits] = useState<ExpenseSplit[]>([]);
 
-  const handleAddExpense = () => {
-    if (!amount || !note || !category) return;
+  const groupId = params.groupId || 'default-group';
+  const createExpenseMutation = useCreateExpense(groupId);
+  const upsertUserMutation = useUpsertUser();
 
-    const expense = {
-      id: Date.now().toString(),
-      groupId: params.groupId || 'default-group',
-      paidBy: 'current-user',
-      amount: parseFloat(amount),
-      note,
-      category,
-      splitType,
-      date: new Date().toISOString().split('T')[0],
-      createdBy: 'current-user',
-      createdAt: new Date().toISOString(),
-      splits: splits.length > 0 ? splits : [
-        { userId: 'current-user', owedAmount: parseFloat(amount) }
-      ],
-    };
+  const group = groups.find((g) => g.id === params.groupId);
+  const memberIds = group
+    ? group.members.map((m) => m.user_id)
+    : ['current-user', 'user2', 'user3'];
 
-    addExpense(expense);
-    router.back();
+  const handleAddExpense = async () => {
+    if (!amount || !note || !category || !user?.id) return;
+
+    try {
+      await upsertUserMutation.mutateAsync(user);
+
+      const finalSplits = splits.length > 0 ? splits : [
+        { userId: user.id, owedAmount: parseFloat(amount) }
+      ];
+
+      const expenseInput = {
+        id: '',
+        groupId,
+        paidBy: user.id,
+        amount: parseFloat(amount),
+        note,
+        category,
+        splitType,
+        date: new Date().toISOString().split('T')[0],
+        createdBy: user.id,
+        createdAt: new Date().toISOString(),
+        splits: finalSplits,
+      };
+
+      const expense = await createExpenseMutation.mutateAsync(expenseInput);
+
+      if (expense) {
+        showToast('success', 'Expense added successfully');
+        router.back();
+      }
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Failed to create expense';
+      console.error('[expense] handleAddExpense error:', error);
+      showToast('error', message);
+    }
   };
+
+  const isLoading = createExpenseMutation.isPending || upsertUserMutation.isPending;
 
   return (
     <ThemedView style={styles.container}>
@@ -131,7 +161,7 @@ export default function AddExpenseScreen() {
               type={splitType}
               onTypeChange={setSplitType}
               amount={parseFloat(amount) || 0}
-              members={['current-user', 'user2', 'user3']}
+              members={memberIds}
               splits={splits}
               onSplitsChange={setSplits}
             />
@@ -141,11 +171,15 @@ export default function AddExpenseScreen() {
             style={({ pressed }) => [
               styles.button,
               pressed && styles.buttonPressed,
-              (!amount || !note || !category) && styles.buttonDisabled,
+              (!amount || !note || !category || isLoading) && styles.buttonDisabled,
             ]}
             onPress={handleAddExpense}
-            disabled={!amount || !note || !category}>
-            <ThemedText style={styles.buttonText}>Add Expense</ThemedText>
+            disabled={!amount || !note || !category || isLoading}>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <ThemedText style={styles.buttonText}>Add Expense</ThemedText>
+            )}
           </Pressable>
         </ScrollView>
       </SafeAreaView>

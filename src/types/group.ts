@@ -21,6 +21,13 @@ export interface GroupInput {
   memberIds: string[];
 }
 
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  avatar?: string;
+}
+
 export interface GroupState {
   groups: GroupWithMembers[];
   isLoading: boolean;
@@ -29,6 +36,7 @@ export interface GroupState {
   addGroup: (group: GroupWithMembers) => void;
   updateGroup: (id: string, updates: Partial<Group>) => void;
   removeGroup: (id: string) => void;
+  addMemberToGroup: (groupId: string, userId: string) => void;
   setLoading: (loading: boolean) => void;
   setError: (error: string | null) => void;
   clearGroups: () => void;

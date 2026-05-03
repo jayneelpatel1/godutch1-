@@ -39,8 +39,7 @@ export async function fetchExpenseById(expenseId: string): Promise<{ expense: Ex
       return { expense: null, error: error?.message || 'Expense not found.' };
     }
 
-    const expense: ExpenseWithSplits = mapExpenseFromDB(data);
-    expense.splits = (data.expense_splits || []).map(mapSplitFromDB);
+    const expense = { ...mapExpenseFromDB(data), splits: (data.expense_splits || []).map(mapSplitFromDB) } as ExpenseWithSplits;
     return { expense, error: null };
   } catch {
     return { expense: null, error: 'Failed to fetch expense.' };

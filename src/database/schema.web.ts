@@ -2,7 +2,7 @@
 // Offline sync will be implemented in later phase
 
 export function initDatabase(): void {
-  console.log('[schema] Online-only mode: SQLite disabled');
+  console.log('[schema.web] Online-only mode: SQLite disabled');
 }
 
 export function getDatabase(): never {

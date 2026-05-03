@@ -1,114 +1,131 @@
-import React, { useState } from 'react';
-import { StyleSheet, View, Pressable, TextInput, KeyboardAvoidingView, Platform } from 'react-native';
+import { useState, useEffect } from 'react';
+import { StyleSheet, View, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
 
+import { firebaseAuth } from '@/services/firebaseConfig';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useAuthStore } from '@/store/authStore';
+import { createOrUpdateUser } from '@/services/userService';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
-import { signInWithEmail } from '@/services/authService';
+
+const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID || '';
+const IOS_CLIENT_ID = process.env.EXPO_PUBLIC_FIREBASE_IOS_CLIENT_ID || '';
 
 export default function LoginScreen() {
-  const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const setUser = useAuthStore((state) => state.setUser);
 
-  const isValidEmail = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const handleFirebaseAuth = async (idToken: string) => {
+    try {
+      const credential = GoogleAuthProvider.credential(idToken);
+      const firebaseUserCredential = await signInWithCredential(firebaseAuth, credential);
+      const firebaseUser = firebaseUserCredential.user;
 
-  const handleSendOTP = async () => {
-    if (!isValidEmail) {
-      setError('Please enter a valid email address');
-      return;
+      const authUser = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        name: firebaseUser.displayName || '',
+        avatar: firebaseUser.photoURL || undefined,
+      };
+
+      setUser(authUser);
+      console.log('[Login] Calling createOrUpdateUser...');
+      const result = await createOrUpdateUser(authUser);
+      console.log('[Login] createOrUpdateUser result:', result);
+
+      setIsLoading(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in');
+      setIsLoading(false);
     }
+  };
 
+  const handleGoogleSignInWeb = async () => {
     setIsLoading(true);
     setError(null);
+    try {
+      const provider = new GoogleAuthProvider();
+      const result = await signInWithPopup(firebaseAuth, provider);
+      const firebaseUser = result.user;
 
-    const { error: authError } = await signInWithEmail(email.trim());
+      const authUser = {
+        id: firebaseUser.uid,
+        email: firebaseUser.email || '',
+        name: firebaseUser.displayName || '',
+        avatar: firebaseUser.photoURL || undefined,
+      };
 
-    setIsLoading(false);
+      setUser(authUser);
+      console.log('[Login] Calling createOrUpdateUser...');
+      const updateResult = await createOrUpdateUser(authUser);
+      console.log('[Login] createOrUpdateUser result:', updateResult);
 
-    if (authError) {
-      setError(authError);
+      setIsLoading(false);
+    } catch (err: any) {
+      setError(err.message || 'Failed to sign in');
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSignIn = async () => {
+    if (Platform.OS === 'web') {
+      await handleGoogleSignInWeb();
     } else {
-      router.push({
-        pathname: '/(auth)/otp',
-        params: { email: email.trim() },
-      });
+      setIsLoading(true);
+      setError(null);
+      await promptAsync({ useProxy: true, showInRecents: true });
     }
   };
 
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}>
-          <View style={styles.content}>
-            <View style={styles.header}>
-              <View style={styles.logoContainer}>
-                <Ionicons name="wallet-outline" size={64} color={Colors.light.primary} />
-              </View>
-              <ThemedText type="title" style={styles.title}>
-                Go Dutch
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary" style={styles.subtitle}>
-                Split expenses, settle easily
-              </ThemedText>
+        <View style={styles.content}>
+          <View style={styles.header}>
+            <View style={styles.logoContainer}>
+              <Ionicons name="wallet-outline" size={64} color={Colors.light.primary} />
             </View>
-
-            <View style={styles.form}>
-              <ThemedText type="subtitle" style={styles.label}>
-                Enter your email address
-              </ThemedText>
-
-              <View style={styles.inputContainer}>
-                <Ionicons
-                  name="mail-outline"
-                  size={20}
-                  color={Colors.light.textSecondary}
-                  style={styles.inputIcon}
-                />
-                <TextInput
-                  style={styles.input}
-                  placeholder="you@example.com"
-                  placeholderTextColor={Colors.light.textSecondary}
-                  value={email}
-                  onChangeText={(text) => {
-                    setEmail(text);
-                    setError(null);
-                  }}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  editable={!isLoading}
-                />
-              </View>
-
-              {error && (
-                <View style={styles.errorContainer}>
-                  <Ionicons name="alert-circle-outline" size={16} color={Colors.light.danger} />
-                  <ThemedText type="small" style={styles.errorText}>
-                    {error}
-                  </ThemedText>
-                </View>
-              )}
-
-              <Pressable
-                style={[styles.button, !isValidEmail && styles.buttonDisabled]}
-                onPress={handleSendOTP}
-                disabled={isLoading || !isValidEmail}>
-                <ThemedText style={styles.buttonText}>
-                  {isLoading ? 'Sending...' : 'Send OTP'}
-                </ThemedText>
-              </Pressable>
-
-              <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
-                We will send you a 6-digit verification code via email
-              </ThemedText>
-            </View>
+            <ThemedText type="title" style={styles.title}>
+              Go Dutch
+            </ThemedText>
+            <ThemedText type="small" themeColor="textSecondary" style={styles.subtitle}>
+              Split expenses, settle easily
+            </ThemedText>
           </View>
-        </KeyboardAvoidingView>
+
+          {error && (
+            <View style={styles.errorContainer}>
+              <Ionicons name="alert-circle-outline" size={16} color={Colors.light.danger} />
+              <ThemedText type="small" style={styles.errorText}>
+                {error}
+              </ThemedText>
+            </View>
+          )}
+
+          <Pressable
+            style={[styles.googleButton, isLoading && styles.buttonDisabled]}
+            onPress={handleGoogleSignIn}
+            disabled={isLoading}>
+            {isLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <>
+                <Ionicons name="logo-google" size={20} color="#FFFFFF" />
+                <ThemedText style={styles.googleButtonText}>
+                  Continue with Google
+                </ThemedText>
+              </>
+            )}
+          </Pressable>
+
+          <ThemedText type="small" themeColor="textSecondary" style={styles.hint}>
+            Sign in securely with your Google account
+          </ThemedText>
+        </View>
       </SafeAreaView>
     </ThemedView>
   );
@@ -117,7 +134,6 @@ export default function LoginScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
-  keyboardView: { flex: 1 },
   content: {
     flex: 1,
     paddingHorizontal: Spacing.four,
@@ -144,30 +160,6 @@ const styles = StyleSheet.create({
   subtitle: {
     textAlign: 'center',
   },
-  form: {
-    width: '100%',
-  },
-  label: {
-    marginBottom: Spacing.two,
-    textAlign: 'center',
-  },
-  inputContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: Colors.light.backgroundElement,
-    borderRadius: BorderRadius,
-    paddingHorizontal: Spacing.three,
-    marginBottom: Spacing.three,
-  },
-  inputIcon: {
-    marginRight: Spacing.two,
-  },
-  input: {
-    flex: 1,
-    fontSize: 18,
-    paddingVertical: Spacing.two,
-    color: Colors.light.text,
-  },
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -181,17 +173,20 @@ const styles = StyleSheet.create({
     marginLeft: Spacing.one,
     flex: 1,
   },
-  button: {
+  googleButton: {
     backgroundColor: Colors.light.primary,
     borderRadius: BorderRadius,
     paddingVertical: Spacing.three,
     alignItems: 'center',
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: Spacing.two,
     marginBottom: Spacing.three,
   },
   buttonDisabled: {
     opacity: 0.5,
   },
-  buttonText: {
+  googleButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',

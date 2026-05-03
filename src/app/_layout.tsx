@@ -1,64 +1,91 @@
+/**
+ * Root Layout Component
+ * ------------------
+ * Handles:
+ * - Listening to Firebase auth state changes
+ * - Redirecting to auth or main routes based on user state
+ * - Managing splash screen visibility
+ */
+
 import { useEffect } from 'react';
-import { Slot, router } from 'expo-router';
+import { Slot, useRouter } from 'expo-router';
 import { SplashScreen } from 'expo-router';
 
-import { supabase } from '@/services/supabase';
 import { useAuthStore } from '@/store/authStore';
+import { QueryProvider } from '@/hooks/QueryProvider';
+import { onGoogleAuthStateChange } from '@/services/googleAuth';
+import { createOrUpdateUser } from '@/services/userService';
 
+// Prevent auto-hiding splash screen until auth state is resolved
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
+  // ---------- Auth State ----------
+  const user = useAuthStore((state) => state.user);
+  const isLoading = useAuthStore((state) => state.isLoading);
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
-  const isLoading = useAuthStore((state) => state.isLoading);
+  const router = useRouter();
 
+  // ---------- Effects ----------
+  
+  /**
+   * Subscribe to Firebase auth state changes
+   * Updates Zustand store and hides splash screen when done
+   */
   useEffect(() => {
-    const initAuth = async () => {
-      try {
-        const { data: { session } } = await supabase.auth.getSession();
+    let mounted = true;
 
-        if (session?.user) {
-          setUser({
-            id: session.user.id,
-            email: session.user.email || '',
-            name: session.user.user_metadata?.name,
-            avatar: session.user.user_metadata?.avatar,
-          });
-          router.replace('/(main)');
-        } else {
-          setUser(null);
-          router.replace('/(auth)/login');
+    const unsubscribe = onGoogleAuthStateChange(async (authUser) => {
+      if (!mounted) return;
+
+      if (authUser) {
+        setUser(authUser);
+        // Sync user to Supabase database (idempotent upsert)
+        try {
+          await createOrUpdateUser(authUser);
+        } catch (e) {
+          console.error('[RootLayout] Failed to sync user to database:', e);
         }
-      } catch {
-        setUser(null);
-        router.replace('/(auth)/login');
-      } finally {
-        setLoading(false);
-        await SplashScreen.hideAsync();
-      }
-    };
-
-    initAuth();
-
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      if (session?.user) {
-        setUser({
-          id: session.user.id,
-          email: session.user.email || '',
-          name: session.user.user_metadata?.name,
-          avatar: session.user.user_metadata?.avatar,
-        });
       } else {
         setUser(null);
       }
+      setLoading(false);
+      SplashScreen.hideAsync();
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      unsubscribe();
+    };
   }, [setUser, setLoading]);
 
+  /**
+   * Handle navigation based on auth state
+   * Redirects to /(main) if logged in, /(auth)/login if not
+   */
+  useEffect(() => {
+    if (isLoading) return;
+
+    // Avoid unnecessary redirects if already on the correct route
+    if (user) {
+      router.replace('/(main)');
+    } else {
+      router.replace('/(auth)/login');
+    }
+  }, [isLoading, user, router]);
+
+  // ---------- Render ----------
+
+  // Show nothing while loading (splash screen is visible)
   if (isLoading) {
     return null;
   }
 
-  return <Slot />;
+  // Wrap app with QueryProvider for React Query
+  return (
+    <QueryProvider>
+      <Slot />
+    </QueryProvider>
+  );
 }

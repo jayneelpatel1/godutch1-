@@ -1,244 +1,283 @@
-# AGENTS.md
+# 📌 Project Overview
 
-# Go Dutch — OpenCode AI Agent Instructions
+Go Dutch is a **cross-platform expense-sharing mobile app** built with React Native.
 
-## Project Overview
-
-Go Dutch is a cross-platform expense-sharing mobile application built using React Native.
-
-The app helps users:
-
-* Create expense groups
-* Split expenses
-* Track balances
-* Manage settlements
-* Work offline-first
-
-The application should prioritize:
-
-* Simplicity
-* Fast UX
-* Minimal UI
-* Clean architecture
-* Reusable components
-* Offline-first support
+### Core Capabilities
+- Create and manage groups
+- Add and split expenses
+- Track balances
+- Optimize settlements
+- Work offline-first (critical feature)
 
 ---
 
-# Tech Stack
+# 🧭 Product Philosophy
+
+### Primary Goal
+> Add an expense in under **5 seconds**
+
+### Principles
+- Speed > Features  
+- Simplicity > Flexibility  
+- Reliability > Perfection  
+
+---
+
+
+
+# 🧱 Tech Stack
 
 ## Frontend
-
-* React Native
-* TypeScript
-* React Navigation
-* Zustand
-* React Query
+- React Native  
+- TypeScript  
+- Expo Router (file-based navigation)  
+- Zustand (client state)  
+- React Query (server state)  
 
 ## Backend
-
-* Supabase
-* PostgreSQL
+- Firebase (Auth - Google SSO) learn : https://firebase.google.com/docs/auth?authuser=0
+- Supabase (DB + APIs)  
+- PostgreSQL  
 
 ## Local Storage
-
-* SQLite
+- SQLite (offline-first storage)  
 
 ## Notifications
-
-* Firebase Cloud Messaging (FCM)
+- Firebase Cloud Messaging (FCM)  
 
 ---
 
-# Project Structure
+# 📂 Project Structure
 
-```text
+```
+
 src/
- ├── assets/
- ├── components/
- ├── constants/
- ├── data/
- ├── hooks/
- ├── navigation/
- ├── screens/
- ├── services/
- ├── store/
- ├── theme/
- ├── types/
- ├── utils/
- └── database/
+├── assets/
+├── components/
+├── constants/
+├── data/
+├── hooks/
+├── navigation/
+├── screens/
+├── services/
+├── store/
+├── theme/
+├── types/
+├── utils/
+└── database/
+
 ```
 
 ---
 
-# Development Rules
+# 🔄 Data Flow Architecture (IMPORTANT)
 
-## General Rules
+```
 
-* Use TypeScript strictly.
-* Prefer functional components.
-* Use reusable components whenever possible.
-* Keep files modular and maintainable.
-* Avoid duplicate code.
-* Prefer clean and readable code over complex optimizations.
+UI (Screens / Components)
+↓
+Hooks (useExpenses, useGroups)
+↓
+Services (API + DB logic)
+↓
+├── React Query (server state)
+├── Zustand (UI/local state)
+└── SQLite (offline storage)
+
+```
+
+### Rules
+- ❌ No API calls in components  
+- ❌ No DB access in UI  
+- ✅ All logic goes through hooks + services  
 
 ---
 
-# UI/UX Guidelines
+# 🧭 Navigation Rules
 
-## Design Principles
+## Use Expo Router ONLY
 
-The app should feel:
+## Structure
 
-* Lightweight
-* Modern
+```
+
+app/
+├── (auth)/
+│   ├── login.tsx (Google SSO via Firebase)
+├── (main)/
+│   ├── home.tsx
+│   ├── group/
+│   │   ├── create.tsx
+│   │   ├── [id].tsx
+│   ├── expense/
+│   │   ├── add.tsx
+│   │   ├── [id].tsx
+│   ├── settlement.tsx
+│   ├── activity.tsx
+│   ├── profile.tsx
+
+````
+
+---
+
+# 🧠 State Management Rules
+
+## Zustand (Client State)
+Use for:
+- Auth state  
+- UI state  
+- Temporary data  
+
+## React Query (Server State)
+Use for:
+- API calls  
+- Caching  
+- Syncing  
+
+---
+
+# 📡 Offline-First Architecture (CRITICAL)
+
+## Core Principle
+> Always write locally first → sync later
+
+---
+
+## SQLite Tables
+
+### Cached Data
+- groups  
+- expenses  
+- members  
+
+### Sync Queue
+
+```sql
+pending_sync:
+- id
+- type (CREATE / UPDATE / DELETE)
+- entity (expense / group / settlement)
+- payload (JSON)
+- status (pending / syncing / failed)
+- retry_count
+- created_at
+````
+
+---
+
+## Sync Flow
+
+1. Save to SQLite
+2. Add to sync queue
+3. Update UI instantly
+4. Sync in background
+
+---
+
+## Sync Rules
+
+* FIFO processing
+* Retry max 3 times
+* Use UUIDs
+* Idempotent APIs
+
+---
+
+## Conflict Resolution
+
+| Case             | Rule            |
+| ---------------- | --------------- |
+| Edit conflict    | Last write wins |
+| Delete vs update | Delete wins     |
+| Server mismatch  | Server wins     |
+
+---
+
+# 💰 Balance Engine
+
+## Step 1: Net Balance
+
+```
+balance = paid - owed
+```
+
+## Step 2: Settlement
+
+* Split into creditors (+) and debtors (-)
+* Match largest values
+* Settle minimum amount
+
+### Example
+
+```
+A: +500
+B: -300
+C: -200
+
+B → A: 300
+C → A: 200
+```
+
+---
+
+# 🌐 API / Service Layer
+
+All APIs must go through:
+
+```
+src/services/
+```
+
+### Example
+
+```ts
+export const createExpense = async (data) => {
+  // Save locally
+  // Add to sync queue
+  // Return response
+};
+```
+
+---
+
+# ⚠️ Error Handling
+
+## Types
+
+* Network Error
+* Validation Error
+* Server Error
+* Sync Error
+
+## Rules
+
+* Show user-friendly messages
+* Provide retry option
+* Never crash
+
+Example:
+
+> "No internet. Expense saved and will sync later."
+
+---
+
+# 🎨 UI/UX Guidelines
+
+## Design
+
 * Minimal
 * Fast
 * Clean
 
-## UX Philosophy
-
-Primary product philosophy:
-
-"Add expense in under 5 seconds."
-
-## UI Rules
+## Rules
 
 * Minimal taps
 * Large touch targets
-* Rounded cards
 * Consistent spacing
-* Simple typography
-* Bottom navigation preferred
-* Avoid cluttered screens
 
 ---
 
-# Styling Rules
-
-## Preferred Styling
-
-Use one consistent styling approach.
-
-Recommended:
-
-* NativeWind
-  OR
-* StyleSheet API
-
-Avoid mixing multiple styling systems.
-
-## Colors
-
-### Primary
-
-#16A34A
-
-### Background
-
-#FFFFFF
-
-### Text
-
-#111827
-
-### Secondary Background
-
-#F3F4F6
-
----
-
-# Navigation Rules
-
-Use React Navigation.
-
-## Navigation Structure
-
-```text
-Auth Stack
- ├── Splash
- ├── Login
- └── OTP
-
-Main Stack
- ├── Home
- ├── Create Group
- ├── Group Details
- ├── Add Expense
- ├── Expense Details
- ├── Settlement
- ├── Activity Feed
- └── Profile
-```
-
----
-
-# State Management Rules
-
-## Zustand Usage
-
-Use Zustand for:
-
-* Local UI state
-* Auth state
-* Temporary app state
-
-Do NOT overuse global state.
-
-## React Query Usage
-
-Use React Query for:
-
-* API requests
-* Server cache
-* Mutations
-* Sync handling
-
----
-
-# Offline-First Rules
-
-Offline support is a core feature.
-
-## Requirements
-
-* App should work without internet.
-* Store changes locally first.
-* Sync automatically when online.
-* Prevent duplicate sync operations.
-
-## Local Database
-
-Use SQLite for:
-
-* Cached groups
-* Expenses
-* Pending sync queue
-
----
-
-# Authentication Rules
-
-## MVP Authentication
-
-Use email OTP authentication only.
-
-Do NOT implement:
-
-* Google login
-* Apple login
-* Mobile OTP login
-
-## Session Rules
-
-* Persist sessions locally.
-* Auto-login users when possible.
-
----
-
-# Component Guidelines
-
-## Reusable Components Required
+# 🎯 Components
 
 ### Buttons
 
@@ -253,316 +292,289 @@ Do NOT implement:
 * BalanceCard
 
 ### Inputs
-
 * TextInput
-* OTPInput
 * SearchInput
 
-### Utility Components
+---
 
-* Avatar
-* EmptyState
-* Loader
-* ErrorState
+# 🎨 Styling
+
+Use ONE:
+
+* NativeWind
+  OR
+* StyleSheet
 
 ---
 
-# Naming Conventions
+## Colors
 
-## File Naming
-
-Use PascalCase for components.
-
-Examples:
-
-* HomeScreen.tsx
-* GroupCard.tsx
-* AddExpenseModal.tsx
-
-## Hook Naming
-
-Use camelCase.
-
-Examples:
-
-* useAuth.ts
-* useExpenses.ts
-
-## Store Naming
-
-Examples:
-
-* authStore.ts
-* expenseStore.ts
+```
+Primary: #16A34A  
+Background: #FFFFFF  
+Text: #111827  
+Secondary: #F3F4F6  
+```
 
 ---
 
-# Code Quality Rules
+# 🔐 Security
+
+* Use Supabase RLS
+* Validate user_id
+* Never trust client
+
+---
+
+# ⚡ Performance
+
+## Targets
+
+* App launch < 3s
+* Expense add < 5s
+
+## Optimization
+
+* Use FlatList
+* Memoize components
+* Avoid re-renders
+
+---
+
+# 📦 Pagination
+
+Use:
+
+* Cursor-based pagination
+* Lazy loading
+
+---
+
+# 🧪 Testing
+
+* Navigation flow
+* Expense calculation
+* Offline sync
+* Validation
+
+---
+
+# 🧑‍💻 Code Quality
 
 ## Required
 
-* Use TypeScript interfaces/types.
-* Avoid any type.
-* Handle loading states.
-* Handle empty states.
-* Handle error states.
-* Keep components small.
+* Strict TypeScript
+* No `any`
+* Handle all states
 
 ## Avoid
 
 * Deep prop drilling
-* Large monolithic components
-* Hardcoded repeated styles
-* Inline business logic in UI components
+* Large components
+* Inline logic
 
 ---
 
-# Performance Guidelines
+# 🔧 Logging
 
-## Requirements
+## Dev
 
-* App launch under 3 seconds.
-* Expense creation under 5 seconds.
-* Smooth scrolling.
-* Minimize unnecessary re-renders.
+* console logs
 
-## Optimization Rules
+## Future
 
-* Memoize expensive components.
-* Use FlatList properly.
-* Avoid unnecessary state updates.
+* Sentry / LogRocket
 
 ---
 
-# Database Schema
+# 🚩 Feature Flags (Future)
 
-## users
-
-```sql
-id
-name
-phone
-avatar
-created_at
-```
-
-## groups
-
-```sql
-id
-name
-created_by
-created_at
-```
-
-## group_members
-
-```sql
-group_id
-user_id
-joined_at
-```
-
-## expenses
-
-```sql
-id
-group_id
-paid_by
-amount
-note
-category
-split_type
-created_at
-```
-
-## expense_splits
-
-```sql
-expense_id
-user_id
-owed_amount
-```
-
-## settlements
-
-```sql
-id
-payer_id
-receiver_id
-amount
-status
-created_at
-```
+* Enable/disable features remotely
 
 ---
 
-# Expense Split Rules
+# 🚫 Git Commit & Push Rules (MANDATORY)
 
-## Supported Split Types
+## Core Rule
+NEVER commit or push code without explicit user permission.
 
-* Equal split
-* Exact amount split
-* Percentage split
-* Ratio split
+Always ask:
+> "Should I commit these changes?"
 
-## Balance Optimization
+---
 
-The system should minimize the number of transactions.
+## Commit Flow (STRICT)
+
+Before committing:
+
+1. Explain what changes were made
+2. Show list of modified files
+3. Suggest a commit message
+4. Ask for approval
+
+Only proceed if user says YES
+
+---
+
+## Commit Message Format
+
+Use conventional commits:
+
+- feat: new feature
+- fix: bug fix
+- refactor: code improvement
+- chore: minor changes
+- docs: documentation updates
+
+### Examples
+- feat: implement expense creation flow  
+- fix: resolve sync duplication issue  
+- refactor: optimize balance calculation  
+- docs: update AGENTS.md with sync rules  
+
+---
+
+## Push Rules
+
+- NEVER push automatically
+- Ask before pushing:
+  > "Should I push these changes?"
+
+---
+
+## Branch Rules
+
+Use feature-based branches:
+
+- feature/auth
+- feature/groups
+- feature/expenses
+- feature/balance-engine
+- feature/offline-sync
+- fix/<bug-name>
+
+---
+
+## AGENTS.md Update Rule (IMPORTANT)
+
+If any of the following changes occur:
+
+- Architecture updates  
+- New patterns introduced  
+- Folder structure changes  
+- State management changes  
+- Sync logic changes  
+
+👉 Then AGENTS.md MUST be updated.
+
+---
+
+## AGENTS.md Update Workflow
+
+1. Modify AGENTS.md
+2. Explain what was updated
+3. Suggest commit message:
 
 Example:
+> docs: update AGENTS.md with offline sync architecture
 
-Instead of:
-
-* A pays B
-* B pays C
-* C pays A
-
-Optimize to:
-
-* A pays C only
+4. Ask:
+> "Should I commit these documentation updates?"
 
 ---
 
-# Development Milestones
+## Atomic Commit Rule
 
-## Milestone 1 ✅ [COMPLETED]
+Each commit should:
+- Do ONE logical change only
+- Be easy to understand and revert
 
-UI-only screens with dummy data.
+❌ Bad:
+- "updated many things"
 
-## Milestone 2 ✅ [COMPLETED]
-
-Authentication and backend setup.
-
-## Milestone 3 ✅ [COMPLETED]
-
-Group management system.
-
-## Milestone 4 ✅ [COMPLETED]
-
-Expense management system.
-
-## Milestone 5
-
-Balance engine and settlements.
-
-## Milestone 6
-
-Offline sync support.
-
-## Milestone 7
-
-Notifications and sharing.
-
-## Milestone 8
-
-QA and beta release.
-
-*Current Progress (as of Sat May 02 2026): Authentication (Milestone 2) completed. OTP email login, session persistence, and auth state management are fully functional.*
+✅ Good:
+- "feat: add group creation screen"
 
 ---
 
-# Dummy Data Rules
+## Safety Rules
 
-During early development:
-
-* Use static mock data.
-* Avoid backend dependency.
-* Prioritize UI completion.
-* Focus on navigation flow.
+- ❌ Do NOT force push  
+- ❌ Do NOT delete branches without permission  
+- ❌ Do NOT overwrite existing commits  
 
 ---
 
-# API Integration Rules
+## Final Rule
 
-## API Layer
+> If unsure, always ask before taking any git action.
+---
 
-All API calls must go through:
+# 🧩 Milestones
 
-```text
-src/services/
-```
+## ✅ Completed
 
-Do NOT call APIs directly inside components.
+* M1: UI
+* M2: Auth
+* M3: Groups
+* M4: Expenses
+
+## 🔄 Next
+
+* M5: Balance engine
+* M6: Offline sync
 
 ---
 
-# Error Handling Rules
+# 🧠 Final Rule
 
-## Requirements
+> Prefer a simple working solution over a perfect complex one.
 
-* Handle network failures.
-* Show meaningful error messages.
-* Provide retry options.
-* Avoid app crashes.
+# 📝 Code Commenting Rules (MANDATORY)
 
----
+## Requirement
+All code generated MUST include meaningful comments.
 
-# Git Workflow
+## Where to Add Comments
 
-## Branch Naming
+### 1. Functions
+- Explain purpose of function
+- Explain inputs/outputs
 
-Examples:
+### 2. Complex Logic
+- Balance calculations
+- Split logic
+- Sync handling
+- Algorithms
 
-* feature/auth
-* feature/groups
-* feature/expenses
-* fix/offline-sync
-
-## Commit Naming
-
-Examples:
-
-* feat: add login screen
-* feat: implement group creation
-* fix: resolve balance calculation bug
+### 3. Critical Flows
+- Offline sync
+- API calls
+- Data transformations
 
 ---
 
-# Testing Rules
+## Example
 
-## Required Testing
+```ts
+// Calculates net balance for each user in a group
+// Input: list of expenses
+// Output: map of userId → balance
+export const calculateBalances = (expenses) => {
+  // Initialize balance map
+  const balances = {}
 
-* Screen rendering
-* Navigation flow
-* Expense calculations
-* Offline sync
-* Form validation
+  // Loop through each expense
+  for (const expense of expenses) {
+    // Add paid amount to payer
+    balances[expense.paidBy] += expense.amount
 
----
+    // Subtract owed amount from participants
+    expense.splits.forEach(split => {
+      balances[split.userId] -= split.owedAmount
+    })
+  }
 
-# Product Philosophy
+  return balances
+}
 
-Every feature should support:
-
-* Speed
-* Simplicity
-* Reliability
-* Minimal friction
-
-The app should always feel faster and simpler than traditional expense-sharing apps.
-
----
-
-# Current Build Commands
-
-Run these commands to work with the current codebase:
-
-```bash
-npm install          # Install dependencies
-npm run start        # Start Expo dev server
-npx expo start      # Same, explicitly via expo
-npx expo lint       # Run ESLint
-npm run android     # Start for Android
-npm run ios         # Start for iOS
-npm run web         # Start for web
-```
-
-## Entry Point
-
-`"main": "expo-router/entry"` in package.json means Expo Router manages the entry point. Do not create a traditional App.tsx or index.js entry point.
-
-## Path Aliases
-
-- `@/*` maps to `./src/*`
-- `@/assets/*` maps to `./assets/*`

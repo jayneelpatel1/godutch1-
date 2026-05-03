@@ -64,7 +64,7 @@ export default function GroupDetailsScreen() {
               <Ionicons name="swap-horizontal-outline" size={20} color={Colors.light.text} />
               <ThemedText type="small" style={styles.actionText}>Settle Up</ThemedText>
             </Pressable>
-            <Pressable style={styles.actionButton}>
+            <Pressable style={styles.actionButton} onPress={() => router.push(`/group/add-member?groupId=${id}`)}>
               <Ionicons name="person-add-outline" size={20} color={Colors.light.text} />
               <ThemedText type="small" style={styles.actionText}>Add Member</ThemedText>
             </Pressable>

@@ -1,56 +1,123 @@
 import { supabase } from './supabase';
 
-import type { Group, GroupMember, GroupInput } from '@/types/group';
+import type { Group, GroupMember, GroupWithMembers, GroupInput } from '@/types/group';
 
-export async function fetchGroups(userId: string): Promise<{ groups: Group[]; error: string | null }> {
+export async function fetchGroups(userId: string): Promise<{ groups: GroupWithMembers[]; error: string | null }> {
   try {
-    const { data, error } = await supabase
+    console.log('[groupService] fetchGroups called for userId:', userId);
+
+    // Step 1: Get all group IDs where user is a member
+    const { data: memberData, error: memberError } = await supabase
+      .from('group_members')
+      .select('group_id')
+      .eq('user_id', userId);
+
+    if (memberError) {
+      console.error('[groupService] Error fetching group members:', memberError);
+      return { groups: [], error: memberError.message };
+    }
+
+    console.log('[groupService] Found group IDs for user:', memberData?.map((m: any) => m.group_id));
+
+    if (!memberData || memberData.length === 0) {
+      console.log('[groupService] No groups found for user');
+      return { groups: [], error: null };
+    }
+
+    const groupIds = memberData.map((m: Record<string, unknown>) => m.group_id as string);
+
+    // Step 2: Fetch groups with those IDs, including all members
+    const { data: groupData, error: groupError } = await supabase
       .from('groups')
       .select(`
         *,
-        group_members!inner(user_id)
+        group_members(
+          user_id,
+          joined_at
+        )
       `)
-      .eq('group_members.user_id', userId);
+      .in('id', groupIds);
 
-    if (error) {
-      return { groups: [], error: error.message };
+    if (groupError) {
+      console.error('[groupService] Error fetching groups:', groupError);
+      return { groups: [], error: groupError.message };
     }
 
-    return { groups: data || [], error: null };
-  } catch {
+    console.log('[groupService] Fetched groups:', groupData?.map((g: any) => ({ id: g.id, name: g.name })));
+
+    const groupsWithMembers: GroupWithMembers[] = (groupData || []).map((group: Record<string, unknown>) => ({
+      id: group.id as string,
+      name: group.name as string,
+      created_by: group.created_by as string,
+      created_at: group.created_at as string,
+      members: (group.group_members as GroupMember[]) || [],
+      memberCount: ((group.group_members as GroupMember[]) || []).length,
+    }));
+
+    return { groups: groupsWithMembers, error: null };
+  } catch (e) {
+    console.error('[groupService] fetchGroups failed:', e);
     return { groups: [], error: 'Failed to fetch groups.' };
   }
 }
 
-export async function createGroup(groupInput: GroupInput, createdBy: string): Promise<{ group: Group | null; error: string | null }> {
+export async function createGroup(groupInput: GroupInput, createdBy: string): Promise<{ group: GroupWithMembers | null; error: string | null }> {
   try {
+    console.log('[groupService] createGroup called:', { name: groupInput.name, createdBy, memberIds: groupInput.memberIds });
+
+    // Create the group first
     const { data: groupData, error: groupError } = await supabase
       .from('groups')
-      .insert({ name: groupInput.name, created_by: createdBy })
+      .insert({ name: groupInput.name, created_by: createdBy, type: 'other' })
       .select()
       .single();
 
-    if (groupError || !groupData) {
+    if (groupError) {
+      console.error('[groupService] Supabase insert error:', groupError);
       return { group: null, error: groupError?.message || 'Failed to create group.' };
     }
 
-    const members: GroupMember[] = groupInput.memberIds.map((userId) => ({
+    if (!groupData) {
+      return { group: null, error: 'Failed to create group - no data returned.' };
+    }
+
+    console.log('[groupService] Group created:', groupData.id);
+
+    // Add all members (including creator)
+    const allMemberIds = [createdBy, ...groupInput.memberIds.filter((id) => id !== createdBy)];
+    
+    const members = allMemberIds.map((userId) => ({
       group_id: groupData.id,
       user_id: userId,
       joined_at: new Date().toISOString(),
     }));
+
+    console.log('[groupService] Inserting members:', members);
 
     const { error: memberError } = await supabase
       .from('group_members')
       .insert(members);
 
     if (memberError) {
+      console.error('[groupService] Error inserting members:', memberError);
       return { group: null, error: memberError.message };
     }
 
-    return { group: groupData, error: null };
-  } catch {
-    return { group: null, error: 'Failed to create group.' };
+    console.log('[groupService] Members inserted successfully');
+
+    const groupWithMembers: GroupWithMembers = {
+      id: groupData.id,
+      name: groupData.name,
+      created_by: groupData.created_by,
+      created_at: groupData.created_at,
+      members,
+      memberCount: members.length,
+    };
+
+    return { group: groupWithMembers, error: null };
+  } catch (e: any) {
+    console.error('[groupService] createGroup failed:', e);
+    return { group: null, error: e.message || 'Failed to create group.' };
   }
 }
 
@@ -62,7 +129,8 @@ export async function updateGroup(groupId: string, updates: Partial<Group>): Pro
       .eq('id', groupId);
 
     return { error: error?.message || null };
-  } catch {
+  } catch (e) {
+    console.error('[groupService] updateGroup failed:', e);
     return { error: 'Failed to update group.' };
   }
 }
@@ -75,7 +143,25 @@ export async function deleteGroup(groupId: string): Promise<{ error: string | nu
       .eq('id', groupId);
 
     return { error: error?.message || null };
-  } catch {
+  } catch (e) {
+    console.error('[groupService] deleteGroup failed:', e);
     return { error: 'Failed to delete group.' };
+  }
+}
+
+export async function addGroupMember(groupId: string, userId: string): Promise<{ error: string | null }> {
+  try {
+    const { error } = await supabase
+      .from('group_members')
+      .insert({
+        group_id: groupId,
+        user_id: userId,
+        joined_at: new Date().toISOString(),
+      });
+
+    return { error: error?.message || null };
+  } catch (e) {
+    console.error('[groupService] addGroupMember failed:', e);
+    return { error: 'Failed to add member.' };
   }
 }

@@ -1,4 +1,5 @@
-import { StyleSheet, View, ScrollView, Pressable, Alert } from 'react-native';
+import { useState } from 'react';
+import { StyleSheet, View, ScrollView, Pressable, TextInput, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Image } from 'expo-image';
 import { Ionicons } from '@expo/vector-icons';
@@ -12,25 +13,63 @@ import { signOut } from '@/services/authService';
 
 export default function ProfileScreen() {
   const user = useAuthStore((state) => state.user);
+  const setUser = useAuthStore((state) => state.setUser);
   const clearAuth = useAuthStore((state) => state.clearAuth);
 
-  const handleLogout = async () => {
-    Alert.alert(
-      'Sign Out',
-      'Are you sure you want to sign out?',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Sign Out',
-          style: 'destructive',
-          onPress: async () => {
-            await signOut();
-            clearAuth();
-            router.replace('/(auth)/login');
+  const [isEditing, setIsEditing] = useState(false);
+  const [name, setName] = useState(user?.name || '');
+
+  const handleSaveName = () => {
+    if (!user) return;
+    setUser({ ...user, name });
+    setIsEditing(false);
+  };
+
+  const handleLogout = () => {
+    // Platform-specific confirmation dialog
+    if (Platform.OS === 'web') {
+      // Web: use window.confirm and window.alert
+      const confirmed = window.confirm('Are you sure you want to sign out?');
+      if (!confirmed) return;
+      handleSignOut();
+    } else {
+      // Native: use React Native Alert
+      Alert.alert(
+        'Sign Out',
+        'Are you sure you want to sign out?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Sign Out',
+            style: 'destructive',
+            onPress: () => handleSignOut(),
           },
-        },
-      ]
-    );
+        ]
+      );
+    }
+  };
+  
+  const handleSignOut = async () => {
+    try {
+      const result = await signOut();
+      if (result.error) {
+        const errorMsg = result.error;
+        if (Platform.OS === 'web') {
+          window.alert('Error: ' + errorMsg);
+        } else {
+          Alert.alert('Error', errorMsg);
+        }
+        return;
+      }
+      // Navigation will be handled by the auth state listener in _layout.tsx
+    } catch (err) {
+      const errorMsg = 'Failed to sign out. Please try again.';
+      if (Platform.OS === 'web') {
+        window.alert(errorMsg);
+      } else {
+        Alert.alert('Error', errorMsg);
+      }
+    }
   };
 
   return (
@@ -48,14 +87,34 @@ export default function ProfileScreen() {
               ) : (
                 <View style={styles.avatarPlaceholder}>
                   <ThemedText style={styles.avatarText}>
-                    {user?.name?.charAt(0).toUpperCase() || '?'}
+                    {name?.charAt(0).toUpperCase() || '?'}
                   </ThemedText>
                 </View>
               )}
             </View>
-            <ThemedText type="title" style={styles.name}>
-              {user?.name || 'User'}
-            </ThemedText>
+
+            {isEditing ? (
+              <View style={styles.editNameRow}>
+                <TextInput
+                  style={styles.nameInput}
+                  value={name}
+                  onChangeText={setName}
+                  placeholder="Enter your name"
+                  autoFocus
+                />
+                <Pressable onPress={handleSaveName} style={styles.saveButton}>
+                  <ThemedText style={styles.saveButtonText}>Save</ThemedText>
+                </Pressable>
+              </View>
+            ) : (
+              <Pressable onPress={() => setIsEditing(true)} style={styles.nameRow}>
+                <ThemedText type="title" style={styles.name}>
+                  {user?.name || 'Add your name'}
+                </ThemedText>
+                <Ionicons name="pencil" size={16} color={Colors.light.textSecondary} />
+              </Pressable>
+            )}
+
             <ThemedText type="small" themeColor="textSecondary">
               {user?.email || 'No email'}
             </ThemedText>
@@ -68,15 +127,25 @@ export default function ProfileScreen() {
             <View style={styles.infoCard}>
               <View style={styles.infoRow}>
                 <View style={styles.infoLabelRow}>
-                  <Ionicons name="information-circle-outline" size={16} color={Colors.light.textSecondary} />
-                  <ThemedText style={styles.infoLabel}>Version</ThemedText>
+                  <Ionicons name="mail-outline" size={16} color={Colors.light.textSecondary} />
+                  <ThemedText style={styles.infoLabel}>Email</ThemedText>
                 </View>
-                <ThemedText themeColor="textSecondary">1.0.0</ThemedText>
+                <ThemedText themeColor="textSecondary">{user?.email || 'Not set'}</ThemedText>
+              </View>
+              <View style={styles.infoRow}>
+                <View style={styles.infoLabelRow}>
+                  <Ionicons name="person-outline" size={16} color={Colors.light.textSecondary} />
+                  <ThemedText style={styles.infoLabel}>Name</ThemedText>
+                </View>
+                <ThemedText themeColor="textSecondary">{user?.name || 'Not set'}</ThemedText>
               </View>
             </View>
           </View>
 
-          <Pressable style={styles.logoutButton} onPress={handleLogout}>
+          <Pressable 
+            style={styles.logoutButton} 
+            onPress={handleLogout}
+          >
             <Ionicons name="log-out-outline" size={20} color={Colors.light.danger} />
             <ThemedText style={styles.logoutText}>Sign Out</ThemedText>
           </Pressable>
@@ -97,11 +166,6 @@ const styles = StyleSheet.create({
     borderRadius: BorderRadius,
     padding: Spacing.four,
     marginBottom: Spacing.four,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
   avatarContainer: { marginBottom: Spacing.two },
   avatar: {
@@ -122,6 +186,38 @@ const styles = StyleSheet.create({
     fontSize: 32,
     fontWeight: '600',
   },
+  nameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.one,
+    marginBottom: Spacing.half,
+  },
+  editNameRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    marginBottom: Spacing.half,
+  },
+  nameInput: {
+    flex: 1,
+    fontSize: 20,
+    fontWeight: '700',
+    color: Colors.light.text,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.light.primary,
+    paddingVertical: Spacing.one,
+  },
+  saveButton: {
+    backgroundColor: Colors.light.primary,
+    paddingHorizontal: Spacing.three,
+    paddingVertical: Spacing.one,
+    borderRadius: 8,
+  },
+  saveButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
   name: { marginBottom: Spacing.half },
   section: { marginBottom: Spacing.four },
   sectionLabel: {
@@ -133,11 +229,6 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
     padding: Spacing.three,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.08,
-    shadowRadius: 4,
-    elevation: 2,
   },
   infoRow: {
     flexDirection: 'row',
