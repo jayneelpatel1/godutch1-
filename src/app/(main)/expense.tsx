@@ -6,12 +6,13 @@ import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useTheme } from '@/hooks/use-theme';
 import SplitSelector from '@/components/SplitSelector';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useCreateExpense } from '@/hooks/useExpenses';
 import { useUpsertUser } from '@/hooks/useUser';
-import { showToast } from '@/components/Toast';
+import { showToast, Toast } from '@/components/Toast';
 import { fetchUsersByIds } from '@/services/userService';
 import type { ExpenseSplit, ExpenseCategory, SplitType } from '@/types/expense';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
@@ -32,6 +33,7 @@ export default function AddExpenseScreen() {
   const params = useLocalSearchParams<{ groupId?: string }>();
   const { user } = useAuthStore();
   const { groups } = useGroupStore();
+  const theme = useTheme();
 
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
@@ -70,9 +72,16 @@ export default function AddExpenseScreen() {
     try {
       await upsertUserMutation.mutateAsync(user);
 
-      const finalSplits = splits.length > 0 ? splits : [
-        { userId: user.id, owedAmount: parseFloat(amount) }
-      ];
+      const finalSplits = splits.length > 0 ? splits : memberNames.map((m) => ({
+        userId: m.userId,
+        owedAmount: Math.round((parseFloat(amount) / memberNames.length) * 100) / 100,
+      }));
+
+      const totalSplit = finalSplits.reduce((sum, s) => sum + s.owedAmount, 0);
+      if (Math.abs(totalSplit - parseFloat(amount)) > 0.01) {
+        showToast('error', `Split total (₹${totalSplit.toFixed(2)}) must equal amount (₹${parseFloat(amount).toFixed(2)})`);
+        return;
+      }
 
       const expenseInput = {
         id: '',
@@ -106,43 +115,46 @@ export default function AddExpenseScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-          <View style={styles.amountSection}>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.amountLabel}>
-              AMOUNT
-            </ThemedText>
+        <Toast />
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <Pressable onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={theme.text} />
+            </Pressable>
+            <ThemedText type="title">Add Expense</ThemedText>
+            <View style={styles.placeholder} />
+          </View>
+
+          <View style={[styles.amountSection, { backgroundColor: theme.backgroundElement }]}>
+            <ThemedText type="small" style={styles.amountLabel}>AMOUNT</ThemedText>
             <View style={styles.amountRow}>
-              <ThemedText style={styles.currency}>₹</ThemedText>
+              <ThemedText type="small" style={[styles.currency, { color: theme.textSecondary }]}>₹</ThemedText>
               <TextInput
-                style={styles.amountInput}
+                style={[styles.amountInput, { color: theme.text }]}
                 value={amount}
                 onChangeText={setAmount}
-                placeholder="0.00"
-                placeholderTextColor={Colors.light.textSecondary}
                 keyboardType="decimal-pad"
+                placeholder="0.00"
+                placeholderTextColor={theme.textSecondary}
                 autoFocus
               />
             </View>
           </View>
 
           <View style={styles.section}>
+            <ThemedText type="small" style={styles.label}>NOTE</ThemedText>
             <TextInput
-              style={styles.noteInput}
+              style={[styles.noteInput, { backgroundColor: theme.backgroundElement, color: theme.text }]}
               value={note}
               onChangeText={setNote}
-              placeholder="What's it for?"
-              placeholderTextColor={Colors.light.textSecondary}
+              placeholder="What's this expense for?"
+              placeholderTextColor={theme.textSecondary}
             />
           </View>
 
           <View style={styles.section}>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.label}>
-              CATEGORY
-            </ThemedText>
-            <ScrollView
-              horizontal
-              showsHorizontalScrollIndicator={false}
-              contentContainerStyle={styles.categoryScroll}>
+            <ThemedText type="small" style={styles.label}>CATEGORY</ThemedText>
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.categoryScroll}>
               {categories.map((cat) => (
                 <Pressable
                   key={cat.id}
@@ -151,17 +163,18 @@ export default function AddExpenseScreen() {
                     category === cat.id && styles.categorySelected,
                   ]}
                   onPress={() => setCategory(cat.id)}>
-                  <View style={[styles.categoryIconWrap, category === cat.id && styles.categoryIconWrapSelected]}>
-                    <Ionicons
-                      name={cat.icon as any}
-                      size={22}
-                      color={category === cat.id ? '#FFFFFF' : Colors.light.primary}
-                    />
+                  <View style={[
+                    styles.categoryIconWrap,
+                    { backgroundColor: theme.backgroundElement },
+                    category === cat.id && { backgroundColor: theme.primary },
+                  ]}>
+                    <Ionicons name={cat.icon as any} size={24} color={category === cat.id ? '#FFFFFF' : theme.textSecondary} />
                   </View>
                   <ThemedText
                     style={[
                       styles.categoryLabel,
-                      category === cat.id && styles.categoryLabelSelected,
+                      { color: theme.textSecondary },
+                      category === cat.id && { color: theme.primary, fontWeight: '600' },
                     ]}>
                     {cat.label}
                   </ThemedText>
@@ -171,9 +184,7 @@ export default function AddExpenseScreen() {
           </View>
 
           <View style={styles.section}>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.label}>
-              SPLIT TYPE
-            </ThemedText>
+            <ThemedText type="small" style={styles.label}>SPLIT TYPE</ThemedText>
             <SplitSelector
               type={splitType}
               onTypeChange={setSplitType}
@@ -185,17 +196,17 @@ export default function AddExpenseScreen() {
           </View>
 
           <Pressable
-            style={({ pressed }) => [
+            style={[
               styles.button,
-              pressed && styles.buttonPressed,
-              (!amount || !note || !category || isLoading) && styles.buttonDisabled,
+              { backgroundColor: theme.primary },
+              (!amount || !note || createExpenseMutation.isPending) && styles.buttonDisabled,
             ]}
             onPress={handleAddExpense}
-            disabled={!amount || !note || !category || isLoading}>
-            {isLoading ? (
-              <ActivityIndicator size="small" color="#FFFFFF" />
+            disabled={!amount || !note || createExpenseMutation.isPending}>
+            {createExpenseMutation.isPending ? (
+              <ActivityIndicator color="#FFFFFF" />
             ) : (
-              <ThemedText style={styles.buttonText}>Add Expense</ThemedText>
+              <ThemedText style={[styles.buttonText, { color: '#FFFFFF' }]}>Add Expense</ThemedText>
             )}
           </Pressable>
         </ScrollView>
@@ -208,32 +219,42 @@ const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1, paddingHorizontal: Spacing.three },
   scrollView: { flex: 1 },
+  scrollContent: { paddingBottom: Spacing.five },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: Spacing.four,
+  },
+  backButton: { padding: Spacing.one },
+  placeholder: { width: 40 },
   amountSection: {
     alignItems: 'center',
-    paddingVertical: Spacing.five,
-    backgroundColor: Colors.light.backgroundElement,
+    paddingVertical: Spacing.three,
     borderRadius: BorderRadius,
-    marginBottom: Spacing.four,
+    marginBottom: Spacing.three,
   },
   amountLabel: {
     textTransform: 'uppercase',
     letterSpacing: 1,
-    marginBottom: Spacing.two,
+    marginBottom: Spacing.one,
   },
   amountRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    maxWidth: '100%',
+    paddingHorizontal: Spacing.two,
   },
   currency: {
-    fontSize: 40,
-    fontWeight: '300',
-    color: Colors.light.textSecondary,
+    fontSize: 28,
+    fontWeight: '400',
   },
   amountInput: {
-    fontSize: 56,
+    fontSize: 32,
     fontWeight: '700',
-    color: Colors.light.text,
-    minWidth: 120,
+    flex: 1,
+    minWidth: 0,
+    maxWidth: '80%',
   },
   section: { marginBottom: Spacing.three },
   label: {
@@ -242,44 +263,37 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   noteInput: {
-    backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
     padding: Spacing.three,
     fontSize: 16,
-    color: Colors.light.text,
   },
   categoryScroll: {
     paddingVertical: Spacing.one,
+    flexGrow: 0,
   },
   categoryItem: {
     alignItems: 'center',
-    paddingHorizontal: Spacing.two,
+    paddingHorizontal: Spacing.one,
     marginRight: Spacing.two,
-    minWidth: 72,
+    minWidth: 64,
   },
   categorySelected: {},
   categoryIconWrap: {
     width: 48,
     height: 48,
     borderRadius: 24,
-    backgroundColor: Colors.light.backgroundElement,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.one,
   },
-  categoryIconWrapSelected: {
-    backgroundColor: Colors.light.primary,
-  },
+  categoryIconWrapSelected: {},
   categoryLabel: {
     fontSize: 12,
-    color: Colors.light.textSecondary,
   },
   categoryLabelSelected: {
-    color: Colors.light.primary,
     fontWeight: '600',
   },
   button: {
-    backgroundColor: Colors.light.primary,
     borderRadius: BorderRadius,
     padding: Spacing.three,
     alignItems: 'center',
@@ -289,7 +303,6 @@ const styles = StyleSheet.create({
   buttonPressed: { opacity: 0.8 },
   buttonDisabled: { opacity: 0.5 },
   buttonText: {
-    color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '600',
   },

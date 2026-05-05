@@ -62,6 +62,7 @@ export function useCreateGroup() {
         addLocalGroup(group);
       }
       queryClient.invalidateQueries({ queryKey: ['groups', userId?.id] });
+      queryClient.invalidateQueries({ queryKey: ['activities', userId?.id] });
     },
     onError: (error) => {
       console.error('[useGroups] createGroup mutation failed:', error.message);
@@ -82,6 +83,7 @@ export function useUpdateGroup() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['groups', userId] });
+      queryClient.invalidateQueries({ queryKey: ['activities', userId] });
     },
   });
 }
@@ -99,6 +101,7 @@ export function useDeleteGroup() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['groups', userId] });
+      queryClient.invalidateQueries({ queryKey: ['activities', userId] });
     },
   });
 }

@@ -50,7 +50,7 @@ export default function AddMemberScreen() {
         return;
       }
 
-      const { error: addError } = await addGroupMember(groupId, user.id);
+      const { error: addError } = await addGroupMember(groupId, user.id, '');
 
       if (addError) {
         showToast('error', addError);

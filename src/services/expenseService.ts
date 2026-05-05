@@ -1,8 +1,10 @@
 import { supabase } from './supabase';
+import { createActivity } from './activityService';
 
 import type { Expense, ExpenseInput, ExpenseSplit, ExpenseWithSplits } from '@/types/expense';
+import type { ActivityInput } from '@/types/activity';
 
-export async function fetchExpenses(groupId: string): Promise<{ expenses: Expense[]; error: string | null }> {
+export async function fetchExpenses(groupId: string): Promise<{ expenses: ExpenseWithSplits[]; error: string | null }> {
   try {
     const { data, error } = await supabase
       .from('expenses')
@@ -17,7 +19,10 @@ export async function fetchExpenses(groupId: string): Promise<{ expenses: Expens
       return { expenses: [], error: error.message };
     }
 
-    const expenses: Expense[] = (data || []).map(mapExpenseFromDB);
+    const expenses: ExpenseWithSplits[] = (data || []).map((d) => ({
+      ...mapExpenseFromDB(d),
+      splits: (d.expense_splits || []).map(mapSplitFromDB),
+    }));
     return { expenses, error: null };
   } catch {
     return { expenses: [], error: 'Failed to fetch expenses.' };
@@ -46,7 +51,7 @@ export async function fetchExpenseById(expenseId: string): Promise<{ expense: Ex
   }
 }
 
-export async function createExpense(input: ExpenseInput): Promise<{ expense: Expense | null; error: string | null }> {
+export async function createExpense(input: ExpenseInput): Promise<{ expense: ExpenseWithSplits | null; error: string | null }> {
   try {
     const { data: expenseData, error: expenseError } = await supabase
       .from('expenses')
@@ -83,14 +88,38 @@ export async function createExpense(input: ExpenseInput): Promise<{ expense: Exp
       return { expense: null, error: splitError.message };
     }
 
-    const expense: Expense = mapExpenseFromDB(expenseData);
+    const expense: ExpenseWithSplits = {
+      ...mapExpenseFromDB(expenseData),
+      splits: splits.map((s) => ({
+        userId: s.user_id as string,
+        owedAmount: s.owed_amount as number,
+        percentage: s.percentage as number | undefined,
+        ratio: s.ratio as number | undefined,
+      })),
+    };
+
+    // Log expense_created activity
+    try {
+      const activityInput: ActivityInput = {
+        userId: input.paidBy,
+        groupId: input.groupId,
+        type: 'expense_created',
+        title: `Expense added: ${input.note || expense.category}`,
+        description: `₹${input.amount.toFixed(2)} · ${input.category}`,
+        metadata: { amount: input.amount, category: input.category, note: input.note },
+      };
+      await createActivity(activityInput);
+    } catch (e) {
+      console.error('[expenseService] Failed to log expense_created activity:', e);
+    }
+
     return { expense, error: null };
   } catch {
     return { expense: null, error: 'Failed to create expense.' };
   }
 }
 
-export async function updateExpense(expenseId: string, updates: Partial<ExpenseInput>): Promise<{ error: string | null }> {
+export async function updateExpense(expenseId: string, updates: Partial<ExpenseInput>, groupId?: string, paidBy?: string): Promise<{ error: string | null }> {
   try {
     const dbUpdates: Record<string, unknown> = {};
     if (updates.paidBy !== undefined) dbUpdates.paid_by = updates.paidBy;
@@ -124,18 +153,52 @@ export async function updateExpense(expenseId: string, updates: Partial<ExpenseI
         .insert(splits);
     }
 
+    // Log expense_updated activity
+    if (paidBy) {
+      try {
+        const activityInput: ActivityInput = {
+          userId: paidBy,
+          groupId,
+          type: 'expense_updated',
+          title: 'Expense updated',
+          description: updates.note || updates.category || 'Expense details changed',
+          metadata: { expenseId, ...updates },
+        };
+        await createActivity(activityInput);
+      } catch (e) {
+        console.error('[expenseService] Failed to log expense_updated activity:', e);
+      }
+    }
+
     return { error: error?.message || null };
   } catch {
     return { error: 'Failed to update expense.' };
   }
 }
 
-export async function deleteExpense(expenseId: string): Promise<{ error: string | null }> {
+export async function deleteExpense(expenseId: string, groupId?: string, paidBy?: string, note?: string): Promise<{ error: string | null }> {
   try {
     const { error } = await supabase
       .from('expenses')
       .delete()
       .eq('id', expenseId);
+
+    // Log expense_deleted activity
+    if (paidBy) {
+      try {
+        const activityInput: ActivityInput = {
+          userId: paidBy,
+          groupId,
+          type: 'expense_deleted',
+          title: 'Expense deleted',
+          description: note || 'Expense was removed',
+          metadata: { expenseId },
+        };
+        await createActivity(activityInput);
+      } catch (e) {
+        console.error('[expenseService] Failed to log expense_deleted activity:', e);
+      }
+    }
 
     return { error: error?.message || null };
   } catch {

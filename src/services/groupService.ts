@@ -1,6 +1,8 @@
 import { supabase } from './supabase';
+import { createActivity } from './activityService';
 
 import type { Group, GroupMember, GroupWithMembers, GroupInput } from '@/types/group';
+import type { ActivityInput } from '@/types/activity';
 
 export async function fetchGroups(userId: string): Promise<{ groups: GroupWithMembers[]; error: string | null }> {
   try {
@@ -105,6 +107,21 @@ export async function createGroup(groupInput: GroupInput, createdBy: string): Pr
 
     console.log('[groupService] Members inserted successfully');
 
+    // Log group_created activity
+    try {
+      const activityInput: ActivityInput = {
+        userId: createdBy,
+        groupId: groupData.id,
+        type: 'group_created',
+        title: `Group "${groupData.name}" created`,
+        description: `Group created with ${members.length} member${members.length !== 1 ? 's' : ''}`,
+        metadata: { groupName: groupData.name, memberCount: members.length },
+      };
+      await createActivity(activityInput);
+    } catch (e) {
+      console.error('[groupService] Failed to log group_created activity:', e);
+    }
+
     const groupWithMembers: GroupWithMembers = {
       id: groupData.id,
       name: groupData.name,
@@ -149,7 +166,7 @@ export async function deleteGroup(groupId: string): Promise<{ error: string | nu
   }
 }
 
-export async function addGroupMember(groupId: string, userId: string): Promise<{ error: string | null }> {
+export async function addGroupMember(groupId: string, userId: string, groupName?: string): Promise<{ error: string | null }> {
   try {
     const { error } = await supabase
       .from('group_members')
@@ -158,6 +175,23 @@ export async function addGroupMember(groupId: string, userId: string): Promise<{
         user_id: userId,
         joined_at: new Date().toISOString(),
       });
+
+    if (!error) {
+      // Log member_added activity
+      try {
+        const activityInput: ActivityInput = {
+          userId,
+          groupId,
+          type: 'member_added',
+          title: 'New member joined',
+          description: groupName ? `Joined group "${groupName}"` : 'Joined a group',
+          metadata: { groupName },
+        };
+        await createActivity(activityInput);
+      } catch (e) {
+        console.error('[groupService] Failed to log member_added activity:', e);
+      }
+    }
 
     return { error: error?.message || null };
   } catch (e) {

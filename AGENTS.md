@@ -264,6 +264,102 @@ refactor: switch to online-only mode
 
 # 🚀 GitHub Rules (CRITICAL)
 
+## 🌿 Branching Strategy (MANDATORY)
+
+⚠️ NEVER work directly on `main` / `master`
+
+---
+
+### 1. Create Feature Branch FIRST
+
+Before writing any code:
+
+```bash
+git checkout -b feature/<feature-name>
+```
+
+---
+
+### 2. Branch Naming Rules
+
+Use clear naming:
+
+* `feature/add-expense-screen`
+* `fix/login-error`
+* `refactor/component-reuse`
+
+---
+
+### 3. Development Flow
+
+1. Create branch
+2. Make changes
+3. Commit (after user approval)
+4. Push branch
+
+```bash
+git push origin feature/<feature-name>
+```
+
+---
+
+### 4. Pull Request Rule
+
+* NEVER push directly to `main`
+* ALWAYS create Pull Request (PR)
+
+---
+
+### 5. AI Must Ask Before Branch Creation
+
+Before creating branch:
+
+```
+Should I create a new branch?
+Branch name: feature/<feature-name>
+```
+
+---
+
+### 6. Push Rule (UPDATED)
+
+Before pushing:
+
+```
+Should I push this branch to GitHub?
+Branch: feature/<feature-name>
+```
+
+---
+
+### 7. Deployment Rule (Post-Push Approval)
+
+* Trigger: After user approves and completes push to GitHub
+* Post-push flow:
+  1. Ask user for Firebase deployment approval
+  2. If approved: Run Expo web build then `firebase deploy`
+  3. Report deployment status to user
+* ❌ NEVER deploy without user approval
+* ❌ NEVER deploy before confirming push success
+
+---
+
+## 🚫 Strict Anti-Rules
+
+* ❌ Do NOT commit directly to main
+* ❌ Do NOT push without branch
+* ❌ Do NOT force push
+* ❌ Do NOT skip PR process
+
+---
+
+## ✅ Final Flow
+
+```
+main → feature branch → commit → push → PR → merge → deploy (Firebase)
+```
+
+
 ## ⛔️ NEVER Commit Without Asking
 
 **YOU MUST:**
@@ -297,6 +393,7 @@ refactor: switch to online-only mode
 * [ ] Is commit already created?
 * [ ] Is branch correct (master/main)?
 * [ ] Is remote correct (origin)?
+* [ ] Is user ready for Firebase deployment post-push?
 
 ## 💬 What To Say To User:
 
@@ -314,6 +411,12 @@ Commit message: "fix: show user names instead of IDs in expense splits"
 ```
 I've created commit: 57d643f
 Should I push to GitHub (origin/master)?
+```
+
+**Before deploying:**
+```
+I've successfully pushed to GitHub (branch: <branch-name>).
+Should I deploy the app to Firebase?
 ```
 
 ---
@@ -370,5 +473,186 @@ Should I push to GitHub (origin/master)?
 - [x] M5: Balance engine (current)
 - [ ] M6: Offline sync (optional, deferred)
 - [ ] M7: Polish & deploy
+
+---
+---
+
+# 🐛 Debugging Rules (STRICT)
+
+## 🎯 Objective
+
+Fix issues with **root-cause analysis**, not guesswork.
+Avoid introducing new bugs while fixing existing ones.
+
+---
+
+## 🚨 Golden Rules (MANDATORY)
+
+* ❌ NEVER fix without understanding the root cause
+
+* ❌ NEVER apply random or multiple fixes at once
+
+* ❌ NEVER break existing working features
+
+* ❌ NEVER ignore error logs
+
+* ✅ ALWAYS reproduce the issue first
+
+* ✅ ALWAYS read logs/errors carefully
+
+* ✅ ALWAYS fix the root cause
+
+* ✅ ALWAYS verify across all platforms (Android, iOS, Web)
+
+---
+
+## 🔍 Debugging Process (Follow Step-by-Step)
+
+### 1. Understand the Problem
+
+* What is expected behavior?
+* What is actually happening?
+
+---
+
+### 2. Reproduce the Issue
+
+* Can it be consistently reproduced?
+* What steps trigger it?
+
+---
+
+### 3. Check Logs & Errors
+
+* Read:
+
+  * Console logs
+  * Network logs
+  * API responses
+
+```js
+console.log('DEBUG:', data);
+```
+
+👉 Do NOT skip this step
+
+---
+
+### 4. Identify Root Cause
+
+Ask:
+
+* Is it UI issue?
+* API issue?
+* State issue?
+* Platform-specific issue?
+
+---
+
+### 5. Apply Minimal Fix
+
+* Fix ONLY what is broken
+* Do NOT refactor unrelated code
+
+---
+
+### 6. Verify Fix
+
+* Test on:
+
+  * Android
+  * iOS
+  * Web
+
+* Test:
+
+  * Edge cases
+  * Different inputs
+
+---
+
+### 7. Cleanup Debug Code
+
+* Remove unnecessary logs
+* Keep only meaningful logs if required
+
+---
+
+## 🧠 Debugging Best Practices
+
+### Use Structured Logs
+
+```js
+console.log('[ExpenseScreen] API Response:', response);
+```
+
+---
+
+### Check API Layer First
+
+* Validate:
+
+  * Request payload
+  * Response format
+  * Error handling
+
+---
+
+### Validate State Flow
+
+* Ensure:
+
+  * Correct data flow
+  * No stale state
+  * Proper updates
+
+---
+
+### Use Isolation Technique
+
+* Disable parts of code to isolate issue
+* Narrow down problem scope
+
+---
+
+## ⚠️ Common Mistakes (AVOID)
+
+* Fixing symptoms instead of cause
+* Blindly changing multiple files
+* Ignoring platform differences
+* Not testing after fix
+* Leaving debug logs in production
+
+---
+
+## 🔄 Debugging Checklist (MANDATORY BEFORE COMMIT)
+
+* [ ] Issue reproduced
+* [ ] Root cause identified
+* [ ] Minimal fix applied
+* [ ] Verified on Android
+* [ ] Verified on iOS
+* [ ] Verified on Web
+* [ ] No unnecessary logs left
+
+---
+
+## 📝 Debug Commit Format
+
+```id="dbg123"
+fix: resolve [issue] by fixing root cause
+debug: identify issue in [component/service]
+```
+
+---
+
+## 🤖 AI Debug Behavior (OpenCode)
+
+* MUST analyze before fixing
+* MUST explain root cause
+* MUST apply minimal fix
+* MUST not introduce new patterns during fix
+* MUST not refactor unrelated code
+* MUST verify cross-platform compatibility
 
 ---

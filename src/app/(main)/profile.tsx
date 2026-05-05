@@ -7,12 +7,14 @@ import { router } from 'expo-router';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useTheme } from '@/hooks/use-theme';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { signOut } from '@/services/authService';
 import { updateUser } from '@/services/userService';
 
 export default function ProfileScreen() {
+  const theme = useTheme();
   const user = useAuthStore((state) => state.user);
   const setUser = useAuthStore((state) => state.setUser);
   const clearAuth = useAuthStore((state) => state.clearAuth);
@@ -96,13 +98,13 @@ export default function ProfileScreen() {
             <ThemedText type="title">Profile</ThemedText>
           </View>
 
-          <View style={styles.profileCard}>
+          <View style={[styles.profileCard, { backgroundColor: theme.backgroundElement }]}>
             <View style={styles.avatarContainer}>
               {user?.avatar ? (
                 <Image source={{ uri: user.avatar }} style={styles.avatar} />
               ) : (
-                <View style={styles.avatarPlaceholder}>
-                  <ThemedText style={styles.avatarText}>
+                <View style={[styles.avatarPlaceholder, { backgroundColor: theme.primary }]}>
+                  <ThemedText style={[styles.avatarText, { color: '#FFFFFF' }]}>
                     {name?.charAt(0).toUpperCase() || '?'}
                   </ThemedText>
                 </View>
@@ -112,14 +114,15 @@ export default function ProfileScreen() {
             {isEditing ? (
               <View style={styles.editNameRow}>
                 <TextInput
-                  style={styles.nameInput}
+                  style={[styles.nameInput, { color: theme.text, borderBottomColor: theme.primary }]}
                   value={name}
                   onChangeText={setName}
                   placeholder="Enter your name"
+                  placeholderTextColor={theme.textSecondary}
                   autoFocus
                 />
-                <Pressable onPress={handleSaveName} style={styles.saveButton}>
-                  <ThemedText style={styles.saveButtonText}>Save</ThemedText>
+                <Pressable onPress={handleSaveName} style={[styles.saveButton, { backgroundColor: theme.primary }]}>
+                  <ThemedText style={[styles.saveButtonText, { color: '#FFFFFF' }]}>Save</ThemedText>
                 </Pressable>
               </View>
             ) : (
@@ -127,7 +130,7 @@ export default function ProfileScreen() {
                 <ThemedText type="title" style={styles.name}>
                   {user?.name || 'Add your name'}
                 </ThemedText>
-                <Ionicons name="pencil" size={16} color={Colors.light.textSecondary} />
+                <Ionicons name="pencil" size={16} color={theme.textSecondary} />
               </Pressable>
             )}
 
@@ -136,21 +139,21 @@ export default function ProfileScreen() {
             </ThemedText>
           </View>
 
-          <View style={styles.section}>
+          <View style={[styles.section, { marginBottom: Spacing.four }]}>
             <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
               ACCOUNT
             </ThemedText>
-            <View style={styles.infoCard}>
+            <View style={[styles.infoCard, { backgroundColor: theme.backgroundElement }]}>
               <View style={styles.infoRow}>
                 <View style={styles.infoLabelRow}>
-                  <Ionicons name="mail-outline" size={16} color={Colors.light.textSecondary} />
+                  <Ionicons name="mail-outline" size={16} color={theme.textSecondary} />
                   <ThemedText style={styles.infoLabel}>Email</ThemedText>
                 </View>
                 <ThemedText themeColor="textSecondary">{user?.email || 'Not set'}</ThemedText>
               </View>
               <View style={styles.infoRow}>
                 <View style={styles.infoLabelRow}>
-                  <Ionicons name="person-outline" size={16} color={Colors.light.textSecondary} />
+                  <Ionicons name="person-outline" size={16} color={theme.textSecondary} />
                   <ThemedText style={styles.infoLabel}>Name</ThemedText>
                 </View>
                 <ThemedText themeColor="textSecondary">{user?.name || 'Not set'}</ThemedText>
@@ -159,11 +162,11 @@ export default function ProfileScreen() {
           </View>
 
           <Pressable 
-            style={styles.logoutButton} 
+            style={[styles.logoutButton, { backgroundColor: theme.danger + '20' }]} 
             onPress={handleLogout}
           >
-            <Ionicons name="log-out-outline" size={20} color={Colors.light.danger} />
-            <ThemedText style={styles.logoutText}>Sign Out</ThemedText>
+            <Ionicons name="log-out-outline" size={20} color={theme.danger} />
+            <ThemedText style={[styles.logoutText, { color: theme.danger }]}>Sign Out</ThemedText>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -178,7 +181,6 @@ const styles = StyleSheet.create({
   header: { paddingVertical: Spacing.four },
   profileCard: {
     alignItems: 'center',
-    backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
     padding: Spacing.four,
     marginBottom: Spacing.four,
@@ -193,12 +195,10 @@ const styles = StyleSheet.create({
     width: 80,
     height: 80,
     borderRadius: 40,
-    backgroundColor: Colors.light.primary,
     alignItems: 'center',
     justifyContent: 'center',
   },
   avatarText: {
-    color: '#FFFFFF',
     fontSize: 32,
     fontWeight: '600',
   },
@@ -218,19 +218,15 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 20,
     fontWeight: '700',
-    color: Colors.light.text,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.primary,
     paddingVertical: Spacing.one,
   },
   saveButton: {
-    backgroundColor: Colors.light.primary,
     paddingHorizontal: Spacing.three,
     paddingVertical: Spacing.one,
     borderRadius: 8,
   },
   saveButtonText: {
-    color: '#FFFFFF',
     fontSize: 14,
     fontWeight: '600',
   },
@@ -242,7 +238,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   infoCard: {
-    backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
     padding: Spacing.three,
   },
@@ -264,14 +259,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#FEE2E2',
     borderRadius: BorderRadius,
     paddingVertical: Spacing.three,
     gap: Spacing.two,
     marginTop: Spacing.three,
   },
   logoutText: {
-    color: Colors.light.danger,
     fontWeight: '600',
     fontSize: 16,
   },

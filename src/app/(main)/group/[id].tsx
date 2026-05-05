@@ -1,4 +1,4 @@
-import { StyleSheet, View, ScrollView, Pressable } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,17 +6,19 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useGroupStore } from '@/store/groupStore';
-import { useExpenseStore } from '@/store/expenseStore';
+import { useExpenses } from '@/hooks/useExpenses';
 import ExpenseCard from '@/components/ExpenseCard';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 export default function GroupDetailsScreen() {
+  const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { groups } = useGroupStore();
-  const { expenses } = useExpenseStore();
+  const { expenses, isLoading } = useExpenses(id as string);
 
   const group = groups.find((g) => g.id === id);
-  const groupExpenses = expenses.filter((e) => e.groupId === id).sort(
+  const sortedExpenses = [...expenses].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
 
@@ -50,7 +52,7 @@ export default function GroupDetailsScreen() {
             <View style={styles.netBalance}>
               <ThemedText type="small" themeColor="textSecondary">Total expenses</ThemedText>
               <ThemedText type="subtitle" style={styles.netAmount}>
-                 ₹${groupExpenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}
+                 ₹{sortedExpenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}
               </ThemedText>
             </View>
           </View>
@@ -72,9 +74,13 @@ export default function GroupDetailsScreen() {
 
           <View style={styles.section}>
             <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
-              EXPENSES ({groupExpenses.length})
+              EXPENSES ({sortedExpenses.length})
             </ThemedText>
-            {groupExpenses.length === 0 ? (
+            {isLoading ? (
+              <View style={styles.emptyState}>
+                <ActivityIndicator size="large" color={theme.primary} />
+              </View>
+            ) : sortedExpenses.length === 0 ? (
               <View style={styles.emptyState}>
                 <Ionicons name="receipt-outline" size={48} color={Colors.light.textSecondary} />
                 <ThemedText type="subtitle" style={styles.emptyTitle}>No expenses yet</ThemedText>
@@ -83,7 +89,7 @@ export default function GroupDetailsScreen() {
                 </ThemedText>
               </View>
             ) : (
-              groupExpenses.map((expense) => (
+              sortedExpenses.map((expense) => (
                 <ExpenseCard
                   key={expense.id}
                   expense={expense}

@@ -1,7 +1,8 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { ThemedText } from './themed-text';
 import type { GroupWithMembers } from '@/types/group';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
 
 interface GroupCardProps {
   group: GroupWithMembers;
@@ -9,31 +10,32 @@ interface GroupCardProps {
 }
 
 export default function GroupCard({ group, onPress }: GroupCardProps) {
+  const theme = useTheme();
   const members = group.memberCount ? Array(group.memberCount).fill(0).map((_, i) => `user${i + 1}`) : [];
   const displayMembers = members.slice(0, 3);
   const overflowCount = Math.max(0, members.length - 3);
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.container, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}
       onPress={onPress}>
       <View style={styles.topRow}>
         <View style={styles.avatarStack}>
           {displayMembers.map((userId, index) => (
-            <View key={userId} style={[styles.memberAvatar, { marginLeft: index > 0 ? -Spacing.one : 0 }]}>
-              <ThemedText style={styles.memberAvatarText}>
+            <View key={userId} style={[styles.memberAvatar, { marginLeft: index > 0 ? -Spacing.one : 0, backgroundColor: theme.primary }]}>
+              <ThemedText style={[styles.memberAvatarText, { color: '#FFFFFF' }]}>
                 {userId.charAt(0).toUpperCase()}
               </ThemedText>
             </View>
           ))}
           {overflowCount > 0 && (
-            <View style={[styles.memberAvatar, styles.overflowAvatar, { marginLeft: -Spacing.one }]}>
+            <View style={[styles.memberAvatar, styles.overflowAvatar, { backgroundColor: theme.backgroundSelected, marginLeft: -Spacing.one }]}>
               <ThemedText style={styles.memberAvatarText}>+{overflowCount}</ThemedText>
             </View>
           )}
         </View>
         <View style={[styles.balanceBadge, styles.settledBadge]}>
-          <ThemedText style={[styles.balanceText, { color: Colors.light.textSecondary }]}>
+          <ThemedText style={[styles.balanceText, { color: theme.textSecondary }]}>
             settled up
           </ThemedText>
         </View>
@@ -50,7 +52,6 @@ export default function GroupCard({ group, onPress }: GroupCardProps) {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
     padding: Spacing.three,
     marginBottom: Spacing.two,
@@ -78,41 +79,26 @@ const styles = StyleSheet.create({
     width: 32,
     height: 32,
     borderRadius: 16,
-    backgroundColor: Colors.light.primary,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: Colors.light.backgroundElement,
   },
   memberAvatarText: {
-    color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '600',
   },
-  overflowAvatar: {
-    backgroundColor: Colors.light.backgroundSelected,
-  },
+  overflowAvatar: {},
   balanceBadge: {
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.one,
     borderRadius: 8,
   },
-  positiveBadge: {
-    backgroundColor: '#DCFCE7',
-  },
-  negativeBadge: {
-    backgroundColor: '#FEE2E2',
-  },
-  settledBadge: {
-    backgroundColor: Colors.light.backgroundSelected,
-  },
+  settledBadge: {},
   balanceText: {
-    fontSize: 14,
-    fontWeight: '700',
+    fontSize: 12,
+    fontWeight: '500',
   },
-  info: {
-    marginTop: Spacing.one,
-  },
+  info: {},
   groupName: {
     marginBottom: Spacing.half,
   },

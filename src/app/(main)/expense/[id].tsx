@@ -1,12 +1,15 @@
-import { StyleSheet, View, Pressable } from 'react-native';
+import { StyleSheet, View, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useEffect, useState } from 'react';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useExpenseStore } from '@/store/expenseStore';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { useExpense } from '@/hooks/useExpenses';
+import { fetchUsersByIds } from '@/services/userService';
+import { Spacing, BorderRadius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 const categoryIcons: Record<string, string> = {
   food: 'restaurant-outline',
@@ -19,12 +22,57 @@ const categoryIcons: Record<string, string> = {
   other: 'ellipsis-horizontal-outline',
 };
 
+interface UserMap {
+  [userId: string]: string;
+}
+
 export default function ExpenseDetailsScreen() {
   const router = useRouter();
+  const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
-  const { expenses } = useExpenseStore();
+  const { expense, isLoading: loadingExpense } = useExpense(id as string);
 
-  const expense = expenses.find((e) => e.id === id);
+  const [userNames, setUserNames] = useState<UserMap>({});
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    if (!expense?.splits || !expense?.paidBy) {
+      setLoading(false);
+      return;
+    }
+
+    const userIds = [...new Set([expense.paidBy, ...expense.splits.map((s) => s.userId)])];
+
+    fetchUsersByIds(userIds).then((result) => {
+      if (result.users) {
+        const names: UserMap = {};
+        result.users.forEach((u) => {
+          names[u.id] = u.name || u.email?.split('@')[0] || 'Unknown';
+        });
+        setUserNames(names);
+      }
+      setLoading(false);
+    }).catch((e) => {
+      console.error('[expense-detail] Failed to fetch user names:', e);
+      setLoading(false);
+    });
+  }, [expense?.id]);
+
+  if (loadingExpense || loading) {
+    return (
+      <ThemedView style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.header}>
+            <Pressable onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={theme.text} />
+            </Pressable>
+            <ThemedText type="title">Expense Details</ThemedText>
+          </View>
+          <ActivityIndicator size="large" color={theme.primary} style={styles.loader} />
+        </SafeAreaView>
+      </ThemedView>
+    );
+  }
 
   if (!expense) {
     return (
@@ -32,7 +80,7 @@ export default function ExpenseDetailsScreen() {
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.header}>
             <Pressable onPress={() => router.back()} style={styles.backButton}>
-              <Ionicons name="arrow-back" size={24} color={Colors.light.text} />
+              <Ionicons name="arrow-back" size={24} color={theme.text} />
             </Pressable>
             <ThemedText type="title">Expense Not Found</ThemedText>
           </View>
@@ -44,53 +92,81 @@ export default function ExpenseDetailsScreen() {
   return (
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={Colors.light.text} />
-          </Pressable>
-          <ThemedText type="title">Expense Details</ThemedText>
-        </View>
-
-        <View style={styles.content}>
-          <View style={styles.card}>
-            <View style={styles.iconWrap}>
-              <Ionicons
-                name={categoryIcons[expense.category] as any || 'ellipsis-horizontal-outline'}
-                size={32}
-                color={Colors.light.primary}
-              />
-            </View>
-            <ThemedText type="title" style={styles.amount}>
-               ₹${expense.amount.toFixed(2)}
-            </ThemedText>
-            <ThemedText type="subtitle" style={styles.note}>
-              {expense.note || 'No description'}
-            </ThemedText>
-            <View style={styles.metaRow}>
-              <ThemedText type="small" themeColor="textSecondary">
-                {expense.category}
-              </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary"> · </ThemedText>
-              <ThemedText type="small" themeColor="textSecondary">
-                {expense.splitType} split
-              </ThemedText>
-            </View>
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
+          <View style={styles.header}>
+            <Pressable onPress={() => router.back()} style={styles.backButton}>
+              <Ionicons name="arrow-back" size={24} color={theme.text} />
+            </Pressable>
+            <ThemedText type="title">Expense Details</ThemedText>
           </View>
 
-          <View style={styles.splitsCard}>
-            <ThemedText type="subtitle" style={styles.splitsTitle}>
-              Split Details
-            </ThemedText>
-            {(expense.splits || []).map((split) => (
-              <View key={split.userId} style={styles.splitRow}>
-                <ThemedText style={styles.splitUser}>{split.userId}</ThemedText>
-                <ThemedText style={styles.splitAmount}>
-                   ₹${split.owedAmount.toFixed(2)}
+          <View style={styles.content}>
+              {/* Amount Card */}
+              <View style={[styles.card, { backgroundColor: theme.backgroundElement }]}>
+                <View style={[styles.iconWrap, { backgroundColor: theme.primary + '20' }]}>
+                  <Ionicons
+                    name={categoryIcons[expense.category] as any || 'ellipsis-horizontal-outline'}
+                    size={32}
+                    color={theme.primary}
+                  />
+                </View>
+                <ThemedText type="title" style={[styles.amount, { color: theme.text }]}>
+                  ₹{expense.amount.toFixed(2)}
                 </ThemedText>
+                <ThemedText type="subtitle" style={styles.note}>
+                  {expense.note || 'No description'}
+                </ThemedText>
+                <View style={styles.metaRow}>
+                  <Ionicons name="pricetag-outline" size={14} color={theme.textSecondary} />
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.metaText}>
+                    {expense.category}
+                  </ThemedText>
+                  <ThemedText type="small" themeColor="textSecondary"> · </ThemedText>
+                  <Ionicons name="swap-horizontal-outline" size={14} color={theme.textSecondary} />
+                  <ThemedText type="small" themeColor="textSecondary" style={styles.metaText}>
+                    {expense.splitType} split
+                  </ThemedText>
+                </View>
               </View>
-            ))}
-          </View>
-        </View>
+
+              {/* Split Details Card */}
+              <View style={[styles.splitsCard, { backgroundColor: theme.backgroundElement }]}>
+                <ThemedText type="subtitle" style={styles.splitsTitle}>
+                  Split Details
+                </ThemedText>
+                {(expense.splits || []).map((split) => {
+                  const name = userNames[split.userId] || split.userId;
+                  const isPayer = split.userId === expense.paidBy;
+                  return (
+                    <View key={split.userId} style={[styles.splitRow, { borderBottomColor: theme.backgroundSelected }]}>
+                      <View style={styles.splitUserRow}>
+                        <View style={[styles.smallAvatar, { backgroundColor: isPayer ? theme.success : theme.textSecondary }]}>
+                          <Ionicons name="person" size={12} color="#FFFFFF" />
+                        </View>
+                        <View style={styles.splitTextWrap}>
+                          {isPayer ? (
+                            <ThemedText style={styles.splitText}>
+                              <ThemedText style={styles.splitName}>{name}</ThemedText>
+                              <ThemedText type="small" themeColor="textSecondary"> paid </ThemedText>
+                              <ThemedText style={styles.splitPaidAmount}>₹{expense.amount.toFixed(2)}</ThemedText>
+                              <ThemedText type="small" themeColor="textSecondary"> and owes </ThemedText>
+                              <ThemedText style={[styles.splitOwesAmount, { color: theme.danger }]}>₹{split.owedAmount.toFixed(2)}</ThemedText>
+                            </ThemedText>
+                          ) : (
+                            <ThemedText style={styles.splitText}>
+                              <ThemedText style={styles.splitName}>{name}</ThemedText>
+                              <ThemedText type="small" themeColor="textSecondary"> owes </ThemedText>
+                              <ThemedText style={[styles.splitOwesAmount, { color: theme.danger }]}>₹{split.owedAmount.toFixed(2)}</ThemedText>
+                            </ThemedText>
+                          )}
+                        </View>
+                      </View>
+                    </View>
+                  );
+                })}
+              </View>
+            </View>
+        </ScrollView>
       </SafeAreaView>
     </ThemedView>
   );
@@ -99,6 +175,8 @@ export default function ExpenseDetailsScreen() {
 const styles = StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1, paddingHorizontal: Spacing.three },
+  scrollView: { flex: 1 },
+  scrollContent: { paddingBottom: Spacing.five },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -109,11 +187,13 @@ const styles = StyleSheet.create({
   backButton: {
     padding: Spacing.one,
   },
+  loader: {
+    marginTop: Spacing.ten,
+  },
   content: {
     gap: Spacing.three,
   },
   card: {
-    backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
     padding: Spacing.four,
     alignItems: 'center',
@@ -122,7 +202,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: '#E5F5EE',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.three,
@@ -130,18 +209,21 @@ const styles = StyleSheet.create({
   amount: {
     fontSize: 40,
     fontWeight: '700',
-    color: Colors.light.text,
     marginBottom: Spacing.one,
   },
   note: {
     marginBottom: Spacing.two,
+    textAlign: 'center',
   },
   metaRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
+  metaText: {
+    marginLeft: Spacing.one,
+    marginRight: Spacing.one,
+  },
   splitsCard: {
-    backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
     padding: Spacing.three,
   },
@@ -154,15 +236,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: Spacing.two,
     borderBottomWidth: 1,
-    borderBottomColor: Colors.light.backgroundSelected,
   },
-  splitUser: {
-    fontSize: 14,
-    color: Colors.light.text,
+  splitUserRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: Spacing.two,
+    flex: 1,
   },
-  splitAmount: {
+  smallAvatar: {
+    width: 24,
+    height: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: 2,
+  },
+  splitTextWrap: {
+    flex: 1,
+  },
+  splitText: {
     fontSize: 14,
+    lineHeight: 20,
+  },
+  splitName: {
     fontWeight: '600',
-    color: Colors.light.primary,
+  },
+  splitPaidAmount: {
+    fontWeight: '600',
+    color: '#4CAF50',
+  },
+  splitOwesAmount: {
+    fontWeight: '600',
   },
 });
