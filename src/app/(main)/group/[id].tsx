@@ -6,7 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useGroupStore } from '@/store/groupStore';
-import { useExpenses } from '@/hooks/useExpenses';
+import { useExpenses, useDeleteExpense } from '@/hooks/useExpenses';
 import ExpenseCard from '@/components/ExpenseCard';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
@@ -16,6 +16,7 @@ export default function GroupDetailsScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const { groups } = useGroupStore();
   const { expenses, isLoading } = useExpenses(id as string);
+  const deleteExpenseMutation = useDeleteExpense(id as string);
 
   const group = groups.find((g) => g.id === id);
   const sortedExpenses = [...expenses].sort(
@@ -34,6 +35,12 @@ export default function GroupDetailsScreen() {
 
   const handleAddExpense = () => {
     router.push(`/expense?groupId=${id}`);
+  };
+
+  const handleDeleteExpense = (expenseId: string) => {
+    if (window.confirm('Are you sure you want to delete this expense?')) {
+      deleteExpenseMutation.mutate(expenseId);
+    }
   };
 
   return (
@@ -94,6 +101,8 @@ export default function GroupDetailsScreen() {
                   key={expense.id}
                   expense={expense}
                   onPress={() => router.push(`/expense/${expense.id}`)}
+                  onDelete={() => handleDeleteExpense(expense.id)}
+                  groupId={id as string}
                 />
               ))
             )}

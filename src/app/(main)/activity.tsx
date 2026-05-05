@@ -7,6 +7,7 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { useActivities } from '@/hooks/useActivities';
+import { deleteOldActivities } from '@/services/activityService';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import ActivityItem from '@/components/ActivityItem';
 
@@ -15,6 +16,7 @@ export default function ActivityScreen() {
   const { data: activities, isLoading, error, refetch } = useActivities();
 
   useFocusEffect(() => {
+    deleteOldActivities(7);
     refetch();
   });
 

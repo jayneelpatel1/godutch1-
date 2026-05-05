@@ -11,6 +11,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuthStore } from '@/store/authStore';
 import { useGroups } from '@/hooks/useGroups';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { deleteOldActivities } from '@/services/activityService';
 
 export default function HomeScreen() {
   const theme = useTheme();
@@ -20,6 +21,7 @@ export default function HomeScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      deleteOldActivities(7);
       refetch();
     }, [refetch])
   );

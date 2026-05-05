@@ -1,4 +1,4 @@
-import { StyleSheet, View, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, Pressable, ScrollView, ActivityIndicator, Platform, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -6,8 +6,9 @@ import { useEffect, useState } from 'react';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
-import { useExpense } from '@/hooks/useExpenses';
+import { useExpense, useDeleteExpense } from '@/hooks/useExpenses';
 import { fetchUsersByIds } from '@/services/userService';
+import { showToast, Toast } from '@/components/Toast';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
@@ -31,6 +32,7 @@ export default function ExpenseDetailsScreen() {
   const theme = useTheme();
   const { id } = useLocalSearchParams<{ id: string }>();
   const { expense, isLoading: loadingExpense } = useExpense(id as string);
+  const deleteExpenseMutation = useDeleteExpense(expense?.groupId || '');
 
   const [userNames, setUserNames] = useState<UserMap>({});
   const [loading, setLoading] = useState(true);
@@ -58,6 +60,46 @@ export default function ExpenseDetailsScreen() {
     });
   }, [expense?.id]);
 
+  const handleEdit = () => {
+    router.push(`/expense/${id}/edit`);
+  };
+
+  const handleDelete = () => {
+    const doDelete = async () => {
+      try {
+        await deleteExpenseMutation.mutateAsync(id as string);
+        showToast('success', 'Expense deleted');
+        if (expense?.groupId) {
+          router.replace(`/group/${expense.groupId}`);
+        } else {
+          router.replace('/');
+        }
+      } catch (error) {
+        console.error('[expense-detail] Failed to delete:', error);
+        showToast('error', 'Failed to delete expense');
+      }
+    };
+
+    if (Platform.OS === 'web') {
+      if (window.confirm('Are you sure you want to delete this expense?')) {
+        doDelete();
+      }
+    } else {
+      Alert.alert(
+        'Delete Expense',
+        'Are you sure you want to delete this expense?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          {
+            text: 'Delete',
+            style: 'destructive',
+            onPress: doDelete,
+          },
+        ]
+      );
+    }
+  };
+
   if (loadingExpense || loading) {
     return (
       <ThemedView style={styles.container}>
@@ -82,7 +124,15 @@ export default function ExpenseDetailsScreen() {
             <Pressable onPress={() => router.back()} style={styles.backButton}>
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </Pressable>
-            <ThemedText type="title">Expense Not Found</ThemedText>
+            <ThemedText type="title">Expense Details</ThemedText>
+            <View style={styles.headerActions}>
+              <Pressable onPress={handleEdit} style={styles.headerAction}>
+                <Ionicons name="pencil-outline" size={22} color={theme.primary} />
+              </Pressable>
+              <Pressable onPress={handleDelete} style={styles.headerAction}>
+                <Ionicons name="trash-outline" size={22} color={theme.danger} />
+              </Pressable>
+            </View>
           </View>
         </SafeAreaView>
       </ThemedView>
@@ -98,6 +148,14 @@ export default function ExpenseDetailsScreen() {
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </Pressable>
             <ThemedText type="title">Expense Details</ThemedText>
+            <View style={styles.headerActions}>
+              <Pressable onPress={handleEdit} style={styles.headerAction}>
+                <Ionicons name="pencil-outline" size={22} color={theme.primary} />
+              </Pressable>
+              <Pressable onPress={handleDelete} style={styles.headerAction}>
+                <Ionicons name="trash-outline" size={22} color={theme.danger} />
+              </Pressable>
+            </View>
           </View>
 
           <View style={styles.content}>
@@ -183,12 +241,21 @@ const styles = StyleSheet.create({
     gap: Spacing.two,
     marginBottom: Spacing.four,
     paddingTop: Spacing.three,
+    flex: 1,
   },
   backButton: {
     padding: Spacing.one,
   },
+  headerActions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    marginLeft: 'auto',
+  },
+  headerAction: {
+    padding: Spacing.one,
+  },
   loader: {
-    marginTop: Spacing.ten,
+    marginTop: 40,
   },
   content: {
     gap: Spacing.three,

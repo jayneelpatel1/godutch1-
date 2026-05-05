@@ -10,6 +10,8 @@
 import { useEffect } from 'react';
 import { Slot, useRouter } from 'expo-router';
 import { SplashScreen } from 'expo-router';
+import { useFonts } from 'expo-font';
+import { Ionicons } from '@expo/vector-icons';
 
 import { useAuthStore } from '@/store/authStore';
 import { QueryProvider } from '@/hooks/QueryProvider';
@@ -26,6 +28,10 @@ export default function RootLayout() {
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
   const router = useRouter();
+
+  const [fontsLoaded] = useFonts({
+    ...Ionicons.font,
+  });
 
   // ---------- Effects ----------
   
@@ -78,7 +84,7 @@ export default function RootLayout() {
   // ---------- Render ----------
 
   // Show nothing while loading (splash screen is visible)
-  if (isLoading) {
+  if (isLoading || !fontsLoaded) {
     return null;
   }
 

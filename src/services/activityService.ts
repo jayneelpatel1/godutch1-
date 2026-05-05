@@ -74,3 +74,31 @@ export async function createActivity(input: ActivityInput): Promise<{ activity: 
     return { activity: null, error: 'Failed to create activity.' };
   }
 }
+
+export async function deleteOldActivities(daysOld: number = 7): Promise<{ deleted: number | null; error: string | null }> {
+  try {
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+
+    const { data, error } = await supabase
+      .from('activities')
+      .delete()
+      .lt('created_at', cutoffDate.toISOString())
+      .select('id');
+
+    if (error) {
+      console.error('[activityService] deleteOldActivities error:', error);
+      return { deleted: null, error: error.message };
+    }
+
+    const deleted = data?.length ?? 0;
+    if (deleted > 0) {
+      console.log(`[activityService] Deleted ${deleted} activities older than ${daysOld} days`);
+    }
+
+    return { deleted, error: null };
+  } catch (e: any) {
+    console.error('[activityService] deleteOldActivities exception:', e);
+    return { deleted: null, error: 'Failed to delete old activities.' };
+  }
+}

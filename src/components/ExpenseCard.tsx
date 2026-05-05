@@ -1,5 +1,6 @@
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { useRouter } from 'expo-router';
 
 import { ThemedText } from './themed-text';
 import type { Expense, ExpenseSplit } from '@/types/expense';
@@ -11,6 +12,8 @@ interface ExpenseCardProps {
   showGroup?: boolean;
   splits?: (ExpenseSplit & { name?: string })[];
   paidByName?: string;
+  onDelete?: () => void;
+  groupId?: string;
 }
 
 const categoryIcons: Record<string, string> = {
@@ -24,8 +27,25 @@ const categoryIcons: Record<string, string> = {
   other: 'ellipsis-horizontal-outline',
 };
 
-export default function ExpenseCard({ expense, onPress, showGroup, splits, paidByName }: ExpenseCardProps) {
+export default function ExpenseCard({ expense, onPress, showGroup, splits, paidByName, onDelete, groupId }: ExpenseCardProps) {
+  const router = useRouter();
   const icon = categoryIcons[expense.category] || 'ellipsis-horizontal-outline';
+
+  const handleEdit = () => {
+    router.push(`/expense/${expense.id}/edit`);
+  };
+
+  const handleDelete = () => {
+    if (onDelete) {
+      if (window.confirm('Are you sure you want to delete this expense?')) {
+        onDelete();
+      }
+    } else {
+      if (window.confirm('Are you sure you want to delete this expense?')) {
+        console.log('[ExpenseCard] Delete requested for:', expense.id);
+      }
+    }
+  };
 
   const renderSplitDetails = () => {
     if (!splits || splits.length === 0) return null;
@@ -86,6 +106,14 @@ export default function ExpenseCard({ expense, onPress, showGroup, splits, paidB
         <ThemedText type="subtitle" style={styles.amount}>
           ₹{expense.amount.toFixed(2)}
         </ThemedText>
+        <View style={styles.actionRow}>
+          <Pressable onPress={handleEdit} style={styles.actionButton}>
+            <Ionicons name="pencil-outline" size={16} color={Colors.light.primary} />
+          </Pressable>
+          <Pressable onPress={handleDelete} style={styles.actionButton}>
+            <Ionicons name="trash-outline" size={16} color={Colors.light.danger} />
+          </Pressable>
+        </View>
       </View>
     </Pressable>
   );
@@ -147,9 +175,18 @@ const styles = StyleSheet.create({
   },
   rightSection: {
     marginLeft: Spacing.two,
+    alignItems: 'flex-end',
   },
   amount: {
     fontWeight: '700',
     color: Colors.light.text,
+  },
+  actionRow: {
+    flexDirection: 'row',
+    marginTop: Spacing.one,
+    gap: Spacing.one,
+  },
+  actionButton: {
+    padding: 2,
   },
 });
