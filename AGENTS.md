@@ -1,4 +1,4 @@
-# 🤖 AGENTS.md — Go Dutch (Cross-Platform OpenCode Instructions)
+# 🤖 AGENTS.md — Kharchaa (Cross-Platform OpenCode Instructions)
 
 ⚠️ **PRIORITY RULE:** Always prefer component reuse over new creation.
 
@@ -6,7 +6,7 @@
 
 # 📌 Project Overview
 
-**Project Name:** Go Dutch
+**Project Name:** Kharchaa
 **Type:** Cross-platform app (Android + iOS + Web)
 **Framework:** React Native + Expo (Web enabled)
 **Purpose:** Expense sharing between friends/groups
@@ -359,6 +359,43 @@ Branch: feature/<feature-name>
 ```
 main → feature branch → commit → push → PR → merge → deploy (Firebase)
 ```
+
+---
+
+## 🚀 Automatic Deployment (NEW)
+
+### Staging Branch Auto-Deploy
+
+* **Branch:** `staging`
+* **Deploy trigger:** Push to `staging` branch
+* **Deploy target:** Firebase Hosting (live channel)
+* **URL:** https://godutch-ab7b2.web.app
+
+### Workflow Files:
+
+* `.github/workflows/firebase-hosting-merge.yml` - Deploys to live on push to `staging`
+* `.github/workflows/firebase-hosting-pull-request.yml` - Creates preview channels for PRs
+
+### Setup Requirements:
+
+1. **GitHub Secret:** `FIREBASE_SERVICE_ACCOUNT_GODUTCH_AB7B2`
+   * Contains Firebase service account JSON key
+   * Required for GitHub Actions to deploy
+
+2. **Build Script:** `npm run build:web`
+   * Exports Expo web app to `dist` folder
+   * Configured in `package.json`
+
+### Deployment Flow:
+
+```
+staging branch → push → GitHub Actions → build → deploy to Firebase
+```
+
+### PR Preview Deployments:
+
+* Automatically creates preview URLs for pull requests
+* Preview URL format: `https://godutch-ab7b2--pr-XXX.web.app`
 
 
 ## ⛔️ NEVER Commit Without Asking
