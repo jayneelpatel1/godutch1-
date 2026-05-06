@@ -1,25 +1,51 @@
-import { useState, useCallback } from 'react';
-import { StyleSheet, View, TextInput, Pressable, Linking } from 'react-native';
+import { useState, useCallback, useEffect } from 'react';
+import { StyleSheet, View, TextInput, Pressable, Linking, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
+import { useTheme } from '@/hooks/use-theme';
 import { useGroupStore } from '@/store/groupStore';
 import { addGroupMember } from '@/services/groupService';
-import { checkUserByEmail } from '@/services/userService';
+import { checkUserByEmail, fetchUsersByIds } from '@/services/userService';
 import { isValidEmail } from '@/utils/validators';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
 import { Toast, showToast } from '@/components/Toast';
+import type { User } from '@/types/group';
 
 export default function AddMemberScreen() {
+  const theme = useTheme();
   const { groupId } = useLocalSearchParams<{ groupId: string }>();
-  const { addMemberToGroup } = useGroupStore();
+  const { groups, addMemberToGroup } = useGroupStore();
 
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+  const [members, setMembers] = useState<(User & { id: string })[]>([]);
+  const [loadingMembers, setLoadingMembers] = useState(true);
+
+  const group = groups.find((g) => g.id === groupId);
+
+  // Fetch current group members
+  useEffect(() => {
+    if (!group?.members || group.members.length === 0) {
+      setLoadingMembers(false);
+      return;
+    }
+
+    const userIds = group.members.map((m) => m.user_id);
+    fetchUsersByIds(userIds).then((result) => {
+      if (result.users) {
+        setMembers(result.users);
+      }
+      setLoadingMembers(false);
+    }).catch((e) => {
+      console.error('[AddMember] Failed to fetch group members:', e);
+      setLoadingMembers(false);
+    });
+  }, [group?.id]);
 
   useFocusEffect(
     useCallback(() => {
@@ -32,12 +58,12 @@ export default function AddMemberScreen() {
 
   const handleAddMember = async () => {
     if (!email.trim()) {
-      Toast.show({ type: 'error', text1: 'Please enter an email' });
+      showToast('error', 'Please enter an email');
       return;
     }
 
     if (!isValidEmail(email)) {
-      Toast.show({ type: 'error', text1: 'Invalid email format' });
+      showToast('error', 'Invalid email format');
       return;
     }
 
@@ -74,7 +100,7 @@ export default function AddMemberScreen() {
         router.back();
       }, 1500);
     } catch {
-      Toast.show({ type: 'error', text1: 'Something went wrong' });
+      showToast('error', 'Something went wrong');
     } finally {
       setIsLoading(false);
     }
@@ -94,58 +120,81 @@ export default function AddMemberScreen() {
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
           <Pressable onPress={() => router.push({ pathname: '/group/[id]', params: { id: groupId } })} style={styles.backButton}>
-             <Ionicons name="arrow-back" size={24} color={Colors.light.text} />
-           </Pressable>
+            <Ionicons name="arrow-back" size={24} color={theme.text} />
+          </Pressable>
           <ThemedText type="title">Add Member</ThemedText>
         </View>
 
-        <View style={styles.content}>
-          <View style={styles.inputCard}>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.label}>
-              MEMBER EMAIL
-            </ThemedText>
-            <View style={styles.inputRow}>
-              <TextInput
-                style={styles.input}
+        {/* Current Members List */}
+        <View style={styles.section}>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.label}>
+            CURRENT MEMBERS ({members.length})
+          </ThemedText>
+          {loadingMembers ? (
+            <ActivityIndicator size="small" color={theme.primary} style={styles.loader} />
+          ) : (
+            <View style={styles.memberList}>
+              {members.map((member) => (
+                <View key={member.id} style={[styles.memberItem, { backgroundColor: theme.backgroundElement }]}>
+                  <View style={[styles.memberAvatar, { backgroundColor: theme.primary }]}>
+                    <ThemedText style={[styles.memberAvatarText, { color: '#FFFFFF' }]}>
+                      {(member.name || member.email)?.charAt(0).toUpperCase()}
+                    </ThemedText>
+                  </View>
+                  <ThemedText style={styles.memberName}>{member.name || member.email}</ThemedText>
+                </View>
+              ))}
+            </View>
+          )}
+        </View>
+
+        <View style={[styles.content, { backgroundColor: theme.backgroundElement }]}>
+          <ThemedText type="small" themeColor="textSecondary" style={styles.label}>
+            MEMBER EMAIL
+          </ThemedText>
+          <View style={styles.inputRow}>
+            <TextInput
+                style={[styles.input, { color: theme.text }]}
                 value={email}
                 onChangeText={(text) => {
                   setEmail(text);
                   setShowInvite(false);
                 }}
                 placeholder="Enter email address"
-                placeholderTextColor={Colors.light.textSecondary}
+                placeholderTextColor={theme.textSecondary}
                 keyboardType="email-address"
                 autoCapitalize="none"
                 autoFocus
               />
-            </View>
           </View>
+        </View>
 
+        <Pressable
+          style={({ pressed }) => [
+            styles.addButton,
+            { backgroundColor: theme.primary },
+            pressed && styles.buttonPressed,
+            isLoading && styles.buttonDisabled,
+          ]}
+          onPress={handleAddMember}
+          disabled={isLoading}>
+          <ThemedText style={styles.addButtonText}>
+            {isLoading ? 'Adding...' : 'Add Member'}
+          </ThemedText>
+        </Pressable>
+
+        {showInvite && (
           <Pressable
             style={({ pressed }) => [
-              styles.addButton,
+              styles.inviteButton,
+              { borderColor: theme.primary },
               pressed && styles.buttonPressed,
-              isLoading && styles.buttonDisabled,
             ]}
-            onPress={handleAddMember}
-            disabled={isLoading}>
-            <ThemedText style={styles.addButtonText}>
-              {isLoading ? 'Adding...' : 'Add Member'}
-            </ThemedText>
+            onPress={handleSendInvite}>
+            <Ionicons name="mail-outline" size={20} color={theme.primary} />
+            <ThemedText style={[styles.inviteButtonText, { color: theme.primary }]}>Send Invite Email</ThemedText>
           </Pressable>
-
-          {showInvite && (
-            <Pressable
-              style={({ pressed }) => [
-                styles.inviteButton,
-                pressed && styles.buttonPressed,
-              ]}
-              onPress={handleSendInvite}>
-              <Ionicons name="mail-outline" size={20} color={Colors.light.primary} />
-              <ThemedText style={styles.inviteButtonText}>Send Invite Email</ThemedText>
-            </Pressable>
-          )}
-        </View>
+        )}
       </SafeAreaView>
     </ThemedView>
   );
@@ -164,27 +213,56 @@ const styles = StyleSheet.create({
   backButton: {
     padding: Spacing.one,
   },
-  content: {
-    gap: Spacing.three,
-  },
-  inputCard: {
-    backgroundColor: Colors.light.backgroundElement,
-    borderRadius: BorderRadius,
-    padding: Spacing.three,
+  section: {
+    marginBottom: Spacing.four,
   },
   label: {
     marginBottom: Spacing.one,
     textTransform: 'uppercase',
     letterSpacing: 1,
   },
+  loader: {
+    paddingVertical: Spacing.three,
+  },
+  memberList: {
+    gap: Spacing.one,
+  },
+  memberItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+    padding: Spacing.two,
+    borderRadius: BorderRadius,
+  },
+  memberAvatar: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  memberAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  memberName: {
+    fontSize: 14,
+    flex: 1,
+  },
+  content: {
+    gap: Spacing.three,
+  },
+  inputCard: {
+    borderRadius: BorderRadius,
+    padding: Spacing.three,
+  },
   inputRow: {},
   input: {
     fontSize: 16,
-    color: Colors.light.text,
     paddingVertical: Spacing.two,
   },
   addButton: {
-    backgroundColor: Colors.light.primary,
     borderRadius: BorderRadius,
     padding: Spacing.three,
     alignItems: 'center',
@@ -200,15 +278,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
     padding: Spacing.three,
     gap: Spacing.two,
     borderWidth: 1,
-    borderColor: Colors.light.primary,
   },
   inviteButtonText: {
-    color: Colors.light.primary,
     fontSize: 16,
     fontWeight: '600',
   },

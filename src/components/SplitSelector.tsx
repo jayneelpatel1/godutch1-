@@ -1,5 +1,5 @@
 import { View, TextInput, Pressable, StyleSheet } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 
 import { ThemedText } from './themed-text';
 import { useTheme } from '@/hooks/use-theme';
@@ -17,6 +17,12 @@ interface SplitSelectorProps {
 
 export default function SplitSelector({ type, onTypeChange, amount, members, splits, onSplitsChange }: SplitSelectorProps) {
   const theme = useTheme();
+  const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
+
+  // Initialize selectedMembers when members change
+  useEffect(() => {
+    setSelectedMembers(new Set(members.map(m => m.userId)));
+  }, [members.length]);
 
   const splitTypes: { id: SplitType; label: string }[] = [
     { id: 'equal', label: 'Equal' },
@@ -25,12 +31,15 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
     { id: 'ratio', label: 'Ratio' },
   ];
 
-  // Initialize splits when members change or amount changes for equal split
+  // Initialize splits when members change or amount changes
   useEffect(() => {
     if (members.length > 0 && amount > 0) {
-      if (type === 'equal') {
-        const perPerson = Math.round((amount / members.length) * 100) / 100;
-        onSplitsChange(members.map((m) => ({ userId: m.userId, owedAmount: perPerson })));
+      const selectedCount = selectedMembers.size;
+      if (type === 'equal' && selectedCount > 0) {
+        const perPerson = Math.round((amount / selectedCount) * 100) / 100;
+        onSplitsChange(members
+          .filter(m => selectedMembers.has(m.userId))
+          .map((m) => ({ userId: m.userId, owedAmount: perPerson })));
       } else if (type === 'percentage') {
         const defaultPercent = Math.round((100 / members.length) * 100) / 100;
         const owedAmount = Math.round((amount * defaultPercent) / 100 * 100) / 100;
@@ -42,15 +51,20 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
         onSplitsChange(members.map((m) => ({ userId: m.userId, owedAmount: 0 })));
       }
     }
-  }, [members.length, amount]);
+  }, [members.length, amount, type, selectedMembers]);
 
   const handleTypeChange = (newType: SplitType) => {
     onTypeChange(newType);
     if (members.length === 0) return;
 
     if (newType === 'equal') {
-      const perPerson = Math.round((amount / members.length) * 100) / 100;
-      onSplitsChange(members.map((m) => ({ userId: m.userId, owedAmount: perPerson })));
+      const selectedCount = selectedMembers.size;
+      if (selectedCount > 0) {
+        const perPerson = Math.round((amount / selectedCount) * 100) / 100;
+        onSplitsChange(members
+          .filter(m => selectedMembers.has(m.userId))
+          .map((m) => ({ userId: m.userId, owedAmount: perPerson })));
+      }
     } else if (newType === 'percentage') {
       const defaultPercent = Math.round((100 / members.length) * 100) / 100;
       const owedAmount = Math.round((amount * defaultPercent) / 100 * 100) / 100;
@@ -61,6 +75,20 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
     } else {
       onSplitsChange(members.map((m) => ({ userId: m.userId, owedAmount: 0 })));
     }
+  };
+
+  const toggleMemberSelection = (userId: string) => {
+    setSelectedMembers(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(userId)) {
+        if (newSet.size > 1) { // Keep at least one member selected
+          newSet.delete(userId);
+        }
+      } else {
+        newSet.add(userId);
+      }
+      return newSet;
+    });
   };
 
   const updateSplitValue = (userId: string, value: number) => {
@@ -150,9 +178,31 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
       <View style={styles.memberList}>
         {members.map((member) => {
           const split = splits.find((s) => s.userId === member.userId);
+          const isSelected = selectedMembers.has(member.userId);
           return (
             <View key={member.userId} style={styles.memberRow}>
-              <ThemedText style={styles.memberName}>{getMemberName(member.userId)}</ThemedText>
+              {type === 'equal' && (
+                <Pressable
+                  style={styles.checkbox}
+                  onPress={() => toggleMemberSelection(member.userId)}>
+                  <View style={[
+                    styles.checkboxInner,
+                    isSelected && { backgroundColor: theme.primary, borderColor: theme.primary }
+                  ]}>
+                    {isSelected && (
+                      <ThemedText style={{ color: '#FFFFFF', fontSize: 12 }}>✓</ThemedText>
+                    )}
+                  </View>
+                </Pressable>
+              )}
+              <ThemedText style={[styles.memberName, !isSelected && styles.memberDisabled]}>
+                {getMemberName(member.userId)}
+              </ThemedText>
+              {type === 'equal' && (
+                <ThemedText style={[styles.equalAmount, { color: isSelected ? theme.primary : theme.textSecondary }]}>
+                  ₹{isSelected ? (split?.owedAmount?.toFixed(2) || '0.00') : '0.00'}
+                </ThemedText>
+              )}
               {type === 'exact' && (
                 <TextInput
                   style={[styles.input, { backgroundColor: theme.backgroundElement, color: theme.text }]}
@@ -188,11 +238,6 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
                   />
                   <ThemedText style={[styles.percentAmount, { color: theme.textSecondary }]}>₹{split?.owedAmount?.toFixed(2) || '0.00'}</ThemedText>
                 </View>
-              )}
-              {type === 'equal' && (
-                <ThemedText style={[styles.equalAmount, { color: theme.primary }]}>
-                   ₹{split?.owedAmount?.toFixed(2) || '0.00'}
-                </ThemedText>
               )}
             </View>
           );
@@ -248,9 +293,24 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     paddingVertical: Spacing.one,
   },
+  checkbox: {
+    marginRight: Spacing.two,
+  },
+  checkboxInner: {
+    width: 20,
+    height: 20,
+    borderRadius: 4,
+    borderWidth: 2,
+    borderColor: '#CCC',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
   memberName: {
     flex: 1,
     fontSize: 14,
+  },
+  memberDisabled: {
+    opacity: 0.5,
   },
   input: {
     borderRadius: 8,

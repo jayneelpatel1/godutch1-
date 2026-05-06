@@ -95,6 +95,25 @@ export async function createOrUpdateUser(authUser: AuthUser): Promise<{ success:
   try {
     console.log('[userService] Creating/updating user:', authUser);
     
+    // First, check if user already exists in Supabase to preserve name
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('name')
+      .eq('id', authUser.id)
+      .maybeSingle();
+    
+    // Determine the name to save
+    let finalName = authUser.name || '';
+    
+    // If Firebase name is empty or is just the email prefix, use existing Supabase name
+    if (!finalName || finalName === authUser.email?.split('@')[0]) {
+      if (existingUser?.name) {
+        finalName = existingUser.name;
+      } else {
+        finalName = authUser.email?.split('@')[0] || 'User';
+      }
+    }
+    
     // Upsert user by ID (Firebase UID is the primary key)
     // Note: Email unique constraint has been removed to support Firebase Auth
     const { data, error } = await supabase
@@ -103,7 +122,7 @@ export async function createOrUpdateUser(authUser: AuthUser): Promise<{ success:
         {
           id: authUser.id,
           email: authUser.email,
-          name: authUser.name || authUser.email.split('@')[0] || 'User',
+          name: finalName,
           phone: null,
           avatar: authUser.avatar || null,
           created_at: new Date().toISOString(),

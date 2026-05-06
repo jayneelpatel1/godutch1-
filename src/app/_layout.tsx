@@ -47,7 +47,7 @@ export default function RootLayout() {
       if (!mounted) return;
 
       if (authUser) {
-        // Fetch latest user data from Supabase to get updated name
+        // First, fetch latest user data from Supabase to get updated name
         try {
           const { data, error } = await supabase
             .from('users')
@@ -56,20 +56,21 @@ export default function RootLayout() {
             .maybeSingle();
           
           if (data) {
-            // Merge Firebase user with Supabase data (name from Supabase)
+            // Merge Firebase user with Supabase data (preserve name from Supabase)
             setUser({ ...authUser, name: data.name || authUser.name });
           } else {
-            setUser(authUser);
+            // User doesn't exist in Supabase yet, create them
+            try {
+              await createOrUpdateUser(authUser);
+              setUser(authUser);
+            } catch (e) {
+              console.error('[RootLayout] Failed to sync user to database:', e);
+              setUser(authUser);
+            }
           }
         } catch (e) {
           console.error('[RootLayout] Failed to fetch user from database:', e);
           setUser(authUser);
-        }
-        // Sync user to Supabase database (idempotent upsert)
-        try {
-          await createOrUpdateUser(authUser);
-        } catch (e) {
-          console.error('[RootLayout] Failed to sync user to database:', e);
         }
       } else {
         setUser(null);
