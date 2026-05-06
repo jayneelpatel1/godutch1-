@@ -5,6 +5,7 @@ import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import GroupCard from '@/components/group-card';
+import Footer from '@/components/footer';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
@@ -65,12 +66,6 @@ export default function HomeScreen() {
             </ThemedText>
           </View>
           <View style={styles.headerButtons}>
-            <Pressable style={styles.debugButton} onPress={() => {
-              console.log('[DEBUG] Firebase UID:', user?.id);
-              alert(`Firebase UID: ${user?.id || 'Not logged in'}`);
-            }}>
-              <Ionicons name="information-circle" size={20} color={theme.textSecondary} />
-            </Pressable>
             <Pressable style={styles.createButton} onPress={handleCreateGroup}>
                <Ionicons name="add-circle" size={24} color={theme.primary} />
              </Pressable>
@@ -121,6 +116,7 @@ export default function HomeScreen() {
                 />
               ))
             )}
+            <Footer />
           </ScrollView>
         )}
       </SafeAreaView>
@@ -141,9 +137,6 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: Spacing.two,
-  },
-  debugButton: {
-    padding: Spacing.one,
   },
   createButton: {
     padding: Spacing.one,

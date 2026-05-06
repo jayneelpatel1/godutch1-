@@ -12,6 +12,7 @@ import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { signOut } from '@/services/authService';
 import { updateUser } from '@/services/userService';
+import Footer from '@/components/footer';
 
 export default function ProfileScreen() {
   const theme = useTheme();
@@ -168,6 +169,7 @@ export default function ProfileScreen() {
             <Ionicons name="log-out-outline" size={20} color={theme.danger} />
             <ThemedText style={[styles.logoutText, { color: theme.danger }]}>Sign Out</ThemedText>
           </Pressable>
+          <Footer />
         </ScrollView>
       </SafeAreaView>
     </ThemedView>

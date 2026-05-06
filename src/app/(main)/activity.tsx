@@ -10,6 +10,7 @@ import { useActivities } from '@/hooks/useActivities';
 import { deleteOldActivities } from '@/services/activityService';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import ActivityItem from '@/components/ActivityItem';
+import Footer from '@/components/footer';
 
 export default function ActivityScreen() {
   const theme = useTheme();
@@ -61,6 +62,7 @@ export default function ActivityScreen() {
                 <ActivityItem key={activity.id} activity={activity} />
               ))}
             </View>
+            <Footer />
           </ScrollView>
         )}
       </SafeAreaView>
