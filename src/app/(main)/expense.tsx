@@ -115,7 +115,6 @@ export default function AddExpenseScreen() {
       const expense = await createExpenseMutation.mutateAsync(expenseInput);
 
       if (expense) {
-        showToast('success', 'Expense added successfully');
         // Clear form values
         setAmount('');
         setNote('');

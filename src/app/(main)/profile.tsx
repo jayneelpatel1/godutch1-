@@ -23,6 +23,13 @@ export default function ProfileScreen() {
   const [isEditing, setIsEditing] = useState(false);
   const [name, setName] = useState(user?.name || '');
 
+  // Update name state when user changes (e.g., after saving)
+  useEffect(() => {
+    if (user?.name) {
+      setName(user.name);
+    }
+  }, [user?.name]);
+
   const handleSaveName = async () => {
     if (!user) return;
     

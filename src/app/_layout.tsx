@@ -46,7 +46,20 @@ export default function RootLayout() {
       if (!mounted) return;
 
       if (authUser) {
-        setUser(authUser);
+        // Fetch latest user data from Supabase to get updated name
+        try {
+          const { getUserById } = await import('@/services/userService');
+          const result = await getUserById(authUser.id);
+          if (result.user) {
+            // Merge Firebase user with Supabase data (name from Supabase)
+            setUser({ ...authUser, name: result.user.name || authUser.name });
+          } else {
+            setUser(authUser);
+          }
+        } catch (e) {
+          console.error('[RootLayout] Failed to fetch user from database:', e);
+          setUser(authUser);
+        }
         // Sync user to Supabase database (idempotent upsert)
         try {
           await createOrUpdateUser(authUser);
