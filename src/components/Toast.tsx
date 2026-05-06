@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { View, Animated, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
@@ -12,37 +12,35 @@ interface ToastData {
   text: string;
 }
 
-let toastRef: { show: (type: ToastType, text: string) => void } | null = null;
-
 export function Toast() {
   const theme = useTheme();
   const [animation] = useState(new Animated.Value(0));
   const [toast, setToast] = useState<ToastData | null>(null);
 
-  useEffect(() => {
-    toastRef = {
-      show: (type: ToastType, text: string) => {
-        setToast({ type, text });
-        Animated.timing(animation, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: false // Web doesn't support native driver
-        }).start();
+  const showToast = useCallback((type: ToastType, text: string) => {
+    setToast({ type, text });
+    Animated.timing(animation, {
+      toValue: 1,
+      duration: 300,
+      useNativeDriver: false
+    }).start();
 
-        setTimeout(() => {
-          Animated.timing(animation, {
-               toValue: 0,
-               duration: 300,
-               useNativeDriver: false // Web doesn't support native driver
-             }).start(() => {
-              setToast(null);
-            });
-        }, 3000);
-      },
-    };
-
-    return () => { toastRef = null; };
+    setTimeout(() => {
+      Animated.timing(animation, {
+        toValue: 0,
+        duration: 300,
+        useNativeDriver: false
+      }).start(() => {
+        setToast(null);
+      });
+    }, 3000);
   }, [animation]);
+
+  // Expose showToast globally
+  useEffect(() => {
+    (global as any).showToast = showToast;
+    return () => { delete (global as any).showToast; };
+  }, [showToast]);
 
   if (!toast) return null;
 
@@ -78,7 +76,7 @@ export function Toast() {
 }
 
 export function showToast(type: ToastType, text: string) {
-  toastRef?.show(type, text);
+  (global as any).showToast(type, text);
 }
 
 const styles = StyleSheet.create({

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useRouter, useLocalSearchParams } from 'expo-router';
+import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
@@ -45,6 +45,21 @@ export default function AddExpenseScreen() {
   const groupId = params.groupId || '';
   const createExpenseMutation = useCreateExpense(groupId);
   const upsertUserMutation = useUpsertUser();
+
+  // Clear form when screen is focused (navigated to)
+  useFocusEffect(
+    React.useCallback(() => {
+      // Clear form values when entering the screen
+      setAmount('');
+      setNote('');
+      setCategory('food');
+      setSplitType('equal');
+      setSplits([]);
+      return () => {
+        // Cleanup when leaving
+      };
+    }, [])
+  );
 
   const group = groups.find((g) => g.id === params.groupId);
   const memberIds = group
@@ -101,7 +116,14 @@ export default function AddExpenseScreen() {
 
       if (expense) {
         showToast('success', 'Expense added successfully');
-        router.back();
+        // Clear form values
+        setAmount('');
+        setNote('');
+        setCategory('food');
+        setSplitType('equal');
+        setSplits([]);
+        // Redirect to group details page
+        router.replace(`/group/${groupId}`);
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to create expense';
