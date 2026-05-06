@@ -1,4 +1,4 @@
-import { StyleSheet, View, ScrollView, Pressable, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, ActivityIndicator, Alert } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -8,9 +8,11 @@ import { ThemedView } from '@/components/themed-view';
 import { useGroupStore } from '@/store/groupStore';
 import { useAuthStore } from '@/store/authStore';
 import { useExpenses, useDeleteExpense } from '@/hooks/useExpenses';
+import { useDeleteGroup } from '@/hooks/useGroups';
 import ExpenseCard from '@/components/ExpenseCard';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
+import { showToast } from '@/components/Toast';
 
 export default function GroupDetailsScreen() {
   const theme = useTheme();
@@ -18,6 +20,7 @@ export default function GroupDetailsScreen() {
   const { groups } = useGroupStore();
   const { expenses, isLoading } = useExpenses(id as string);
   const deleteExpenseMutation = useDeleteExpense(id as string);
+  const deleteGroupMutation = useDeleteGroup();
 
   const group = groups.find((g) => g.id === id);
   const currentUserId = useAuthStore((state) => state.user?.id);
@@ -56,9 +59,43 @@ export default function GroupDetailsScreen() {
   };
 
   const handleDeleteExpense = (expenseId: string) => {
-    if (window.confirm('Are you sure you want to delete this expense?')) {
-      deleteExpenseMutation.mutate(expenseId);
-    }
+    Alert.alert(
+      'Delete Expense',
+      'Are you sure you want to delete this expense?',
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => deleteExpenseMutation.mutate(expenseId),
+        },
+      ]
+    );
+  };
+
+  const handleDeleteGroup = () => {
+    Alert.alert(
+      'Delete Group',
+      `Are you sure you want to delete "${group.name}"? This action cannot be undone. All expenses in this group will also be deleted.`,
+      [
+        { text: 'Cancel', style: 'cancel' },
+        {
+          text: 'Delete',
+          style: 'destructive',
+          onPress: () => {
+            deleteGroupMutation.mutate({ groupId: group.id, groupName: group.name }, {
+              onSuccess: () => {
+                showToast('success', 'Group deleted successfully');
+                router.replace('/(main)');
+              },
+              onError: (error: any) => {
+                showToast('error', error.message || 'Failed to delete group');
+              },
+            });
+          },
+        },
+      ]
+    );
   };
 
   return (
@@ -94,6 +131,10 @@ export default function GroupDetailsScreen() {
             <Pressable style={styles.actionButton} onPress={() => router.push(`/group/add-member?groupId=${id}`)}>
               <Ionicons name="person-add-outline" size={20} color={Colors.light.text} />
               <ThemedText type="small" style={styles.actionText}>Add Member</ThemedText>
+            </Pressable>
+            <Pressable style={styles.actionButton} onPress={handleDeleteGroup}>
+              <Ionicons name="trash-outline" size={20} color={Colors.light.danger} />
+              <ThemedText type="small" style={[styles.actionText, { color: Colors.light.danger }]}>Delete</ThemedText>
             </Pressable>
           </View>
 

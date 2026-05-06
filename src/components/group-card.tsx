@@ -1,24 +1,67 @@
-import { Pressable, StyleSheet, View } from 'react-native';
+import { Pressable, StyleSheet, View, Alert, Platform } from 'react-native';
 import { ThemedText } from './themed-text';
 import type { GroupWithMembers } from '@/types/group';
 import { useTheme } from '@/hooks/use-theme';
 import { Spacing, BorderRadius } from '@/constants/theme';
+import { Ionicons } from '@expo/vector-icons';
 
 interface GroupCardProps {
   group: GroupWithMembers;
   onPress?: () => void;
+  onDelete?: () => void;
 }
 
-export default function GroupCard({ group, onPress }: GroupCardProps) {
+export default function GroupCard({ group, onPress, onDelete }: GroupCardProps) {
   const theme = useTheme();
   const members = group.memberCount ? Array(group.memberCount).fill(0).map((_, i) => `user${i + 1}`) : [];
   const displayMembers = members.slice(0, 3);
   const overflowCount = Math.max(0, members.length - 3);
 
+  const showContextMenu = () => {
+    if (Platform.OS === 'web') {
+      // On web, show delete confirmation directly
+      if (window.confirm(`Delete "${group.name}"? This action cannot be undone.`)) {
+        onDelete?.();
+      }
+    } else {
+      // On mobile, show context menu
+      Alert.alert(
+        group.name,
+        'What would you like to do?',
+        [
+          { text: 'Cancel', style: 'cancel' },
+          ...(onDelete
+            ? [
+                {
+                  text: 'Delete',
+                  style: 'destructive' as const,
+                  onPress: () => {
+                    Alert.alert(
+                      'Delete Group',
+                      `Are you sure you want to delete "${group.name}"? This action cannot be undone.`,
+                      [
+                        { text: 'Cancel', style: 'cancel' as const },
+                        {
+                          text: 'Delete',
+                          style: 'destructive' as const,
+                          onPress: () => onDelete?.(),
+                        },
+                      ]
+                    );
+                  },
+                },
+              ]
+            : []),
+        ]
+      );
+    }
+  };
+
   return (
     <Pressable
       style={({ pressed }) => [styles.container, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}
-      onPress={onPress}>
+      onPress={onPress}
+      {...(Platform.OS !== 'web' ? { onLongPress: showContextMenu } : {})}>
       <View style={styles.topRow}>
         <View style={styles.avatarStack}>
           {displayMembers.map((userId, index) => (
@@ -34,10 +77,17 @@ export default function GroupCard({ group, onPress }: GroupCardProps) {
             </View>
           )}
         </View>
-        <View style={[styles.balanceBadge, styles.settledBadge]}>
-          <ThemedText style={[styles.balanceText, { color: theme.textSecondary }]}>
-            settled up
-          </ThemedText>
+        <View style={styles.rightSection}>
+          <View style={[styles.balanceBadge, styles.settledBadge]}>
+            <ThemedText style={[styles.balanceText, { color: theme.textSecondary }]}>
+              settled up
+            </ThemedText>
+          </View>
+          {onDelete && Platform.OS === 'web' && (
+            <Pressable onPress={showContextMenu} style={styles.menuButton} hitSlop={8}>
+              <Ionicons name="ellipsis-vertical" size={16} color={theme.textSecondary} />
+            </Pressable>
+          )}
         </View>
       </View>
       <View style={styles.info}>
@@ -75,6 +125,11 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
   },
+  rightSection: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: Spacing.two,
+  },
   memberAvatar: {
     width: 32,
     height: 32,
@@ -88,6 +143,9 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   overflowAvatar: {},
+  menuButton: {
+    padding: Spacing.one,
+  },
   balanceBadge: {
     paddingHorizontal: Spacing.two,
     paddingVertical: Spacing.one,

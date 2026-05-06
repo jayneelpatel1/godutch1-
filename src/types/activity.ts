@@ -3,6 +3,7 @@ export type ActivityType =
   | 'expense_updated'
   | 'expense_deleted'
   | 'group_created'
+  | 'group_deleted'
   | 'member_added';
 
 export interface Activity {

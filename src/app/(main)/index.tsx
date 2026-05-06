@@ -9,15 +9,17 @@ import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuthStore } from '@/store/authStore';
-import { useGroups } from '@/hooks/useGroups';
+import { useGroups, useDeleteGroup } from '@/hooks/useGroups';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { deleteOldActivities } from '@/services/activityService';
+import { showToast } from '@/components/Toast';
 
 export default function HomeScreen() {
   const theme = useTheme();
   const { user } = useAuthStore();
   const { groups, isLoading, error, refetch } = useGroups();
   const [refreshing, setRefreshing] = useState(false);
+  const deleteGroupMutation = useDeleteGroup();
 
   useFocusEffect(
     useCallback(() => {
@@ -38,6 +40,18 @@ export default function HomeScreen() {
 
   const handleCreateGroup = () => {
     router.push('/create-group');
+  };
+
+  const handleDeleteGroup = (groupId: string, groupName: string) => {
+    console.log('[HomeScreen] handleDeleteGroup called for:', groupId, groupName);
+    deleteGroupMutation.mutate({ groupId, groupName }, {
+      onSuccess: () => {
+        showToast('success', 'Group deleted successfully');
+      },
+      onError: (error: any) => {
+        showToast('error', error.message || 'Failed to delete group');
+      },
+    });
   };
 
   return (
@@ -103,6 +117,7 @@ export default function HomeScreen() {
                   key={group.id}
                   group={group}
                   onPress={() => handleGroupPress(group.id)}
+                  onDelete={() => handleDeleteGroup(group.id, group.name)}
                 />
               ))
             )}

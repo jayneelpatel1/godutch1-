@@ -8,6 +8,7 @@ import type { GroupInput } from '@/types/group';
 
 export function useGroups() {
   const userId = useAuthStore((state) => state.user?.id);
+  const groupsFromStore = useGroupStore((state) => state.groups);
   const setLocalGroups = useGroupStore((state) => state.setGroups);
 
   const { data, isLoading, error, refetch } = useQuery({
@@ -28,8 +29,12 @@ export function useGroups() {
     enabled: !!userId,
   });
 
+  // Return groups from store (which gets updated immediately on delete)
+  // Fall back to query data if store is empty (initial load)
+  const groups = groupsFromStore.length > 0 ? groupsFromStore : (data?.groups ?? []);
+
   return {
-    groups: data?.groups ?? [],
+    groups,
     isLoading,
     error: error?.message ?? null,
     refetch,
@@ -91,17 +96,24 @@ export function useUpdateGroup() {
 export function useDeleteGroup() {
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);
+  const removeLocalGroup = useGroupStore((state) => state.removeGroup);
 
   return useMutation({
-    mutationFn: async (groupId: string) => {
+    mutationFn: async ({ groupId, groupName }: { groupId: string; groupName?: string }) => {
       if (!userId) throw new Error('Not authenticated');
-      const result = await deleteGroup(groupId);
+      const result = await deleteGroup(groupId, groupName, userId);
       if (result.error) throw new Error(result.error);
       return result;
     },
-    onSuccess: () => {
+    onSuccess: (_, variables) => {
+      // Update local store immediately
+      removeLocalGroup(variables.groupId);
+      // Invalidate queries to refetch from server
       queryClient.invalidateQueries({ queryKey: ['groups', userId] });
       queryClient.invalidateQueries({ queryKey: ['activities', userId] });
+    },
+    onError: (error) => {
+      console.error('[useDeleteGroup] Delete failed:', error);
     },
   });
 }

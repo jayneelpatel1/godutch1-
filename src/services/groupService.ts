@@ -152,12 +152,29 @@ export async function updateGroup(groupId: string, updates: Partial<Group>): Pro
   }
 }
 
-export async function deleteGroup(groupId: string): Promise<{ error: string | null }> {
+export async function deleteGroup(groupId: string, groupName?: string, deletedBy?: string): Promise<{ error: string | null }> {
   try {
     const { error } = await supabase
       .from('groups')
       .delete()
       .eq('id', groupId);
+
+    if (!error && deletedBy) {
+      // Log group_deleted activity
+      try {
+        const activityInput: ActivityInput = {
+          userId: deletedBy,
+          groupId,
+          type: 'group_deleted',
+          title: 'Group deleted',
+          description: groupName ? `Group "${groupName}" was deleted` : 'Group was deleted',
+          metadata: { groupName, groupId },
+        };
+        await createActivity(activityInput);
+      } catch (e) {
+        console.error('[groupService] Failed to log group_deleted activity:', e);
+      }
+    }
 
     return { error: error?.message || null };
   } catch (e) {
