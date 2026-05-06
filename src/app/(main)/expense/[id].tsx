@@ -37,7 +37,7 @@ export default function ExpenseDetailsScreen() {
   const [userNames, setUserNames] = useState<UserMap>({});
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  const fetchNames = () => {
     if (!expense?.splits || !expense?.paidBy) {
       setLoading(false);
       return;
@@ -58,6 +58,10 @@ export default function ExpenseDetailsScreen() {
       console.error('[expense-detail] Failed to fetch user names:', e);
       setLoading(false);
     });
+  };
+
+  useEffect(() => {
+    fetchNames();
   }, [expense?.id]);
 
   const handleEdit = () => {

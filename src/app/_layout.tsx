@@ -17,6 +17,7 @@ import { useAuthStore } from '@/store/authStore';
 import { QueryProvider } from '@/hooks/QueryProvider';
 import { onGoogleAuthStateChange } from '@/services/googleAuth';
 import { createOrUpdateUser } from '@/services/userService';
+import { supabase } from '@/services/supabase';
 
 // Prevent auto-hiding splash screen until auth state is resolved
 SplashScreen.preventAutoHideAsync();
@@ -48,11 +49,15 @@ export default function RootLayout() {
       if (authUser) {
         // Fetch latest user data from Supabase to get updated name
         try {
-          const { getUserById } = await import('@/services/userService');
-          const result = await getUserById(authUser.id);
-          if (result.user) {
+          const { data, error } = await supabase
+            .from('users')
+            .select('id, name, email, avatar')
+            .eq('id', authUser.id)
+            .maybeSingle();
+          
+          if (data) {
             // Merge Firebase user with Supabase data (name from Supabase)
-            setUser({ ...authUser, name: result.user.name || authUser.name });
+            setUser({ ...authUser, name: data.name || authUser.name });
           } else {
             setUser(authUser);
           }

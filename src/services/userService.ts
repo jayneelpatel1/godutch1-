@@ -41,7 +41,7 @@ export async function fetchUsersByIds(userIds: string[]): Promise<{ users: (User
       return { users: [], error: error.message };
     }
 
-    return { users: (data || []) as (User & { id: string })[] , error: null };
+    return { users: (data || []) as (User & { id: string })[], error: null };
   } catch (e: any) {
     console.error('[userService] fetchUsersByIds failed:', e);
     return { users: [], error: e.message || 'Failed to fetch users.' };
