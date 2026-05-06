@@ -369,19 +369,17 @@ main → feature branch → commit → push → PR → merge → deploy (Firebas
    - Show what files will be committed
    - Show the commit message you plan to use
 
-2. **Always ask the user before pushing**
-   - "Should I push to GitHub?"
-   - Confirm the branch name
-   - Confirm the remote (origin/master)
-
-3. **Wait for explicit user approval**
+2. **Wait for explicit user approval**
    - Only commit after user says "yes" or "commit"
-   - Only push after user says "yes" or "push"
+   - When user says "commit": Commit first, then automatically push to GitHub
+   - Ask for deployment approval ONLY after successful push
 
-4. **NEVER deploy when committing**
+3. **NEVER deploy when committing**
    - ❌ Deployment only happens AFTER successful push to GitHub
    - ❌ Never include deployment in commit workflow
    - ✅ Deploy only when user approves post-push
+
+**New Rule:** If user says "commit", automatically push to GitHub after creating the commit.
 
 ## ✅ Commit Checklist (Ask User First!)
 
@@ -417,6 +415,14 @@ Commit message: "fix: show user names instead of IDs in expense splits"
 ```
 I've created commit: 57d643f
 Should I push to GitHub (origin/master)?
+```
+
+**After "commit" command (auto-push):**
+```
+I've committed: 57d643f
+Now pushing to GitHub (origin/master)...
+[Push successful]
+Should I deploy the app to Firebase?
 ```
 
 **Before deploying:**
