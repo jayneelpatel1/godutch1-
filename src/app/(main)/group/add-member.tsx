@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { StyleSheet, View, TextInput, Pressable, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { useLocalSearchParams, router } from 'expo-router';
+import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
@@ -20,6 +20,15 @@ export default function AddMemberScreen() {
   const [email, setEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [showInvite, setShowInvite] = useState(false);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        setEmail('');
+        setShowInvite(false);
+      };
+    }, [])
+  );
 
   const handleAddMember = async () => {
     if (!email.trim()) {
@@ -84,9 +93,9 @@ export default function AddMemberScreen() {
       <Toast />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.back()} style={styles.backButton}>
-            <Ionicons name="arrow-back" size={24} color={Colors.light.text} />
-          </Pressable>
+          <Pressable onPress={() => router.push({ pathname: '/group/[id]', params: { id: groupId } })} style={styles.backButton}>
+             <Ionicons name="arrow-back" size={24} color={Colors.light.text} />
+           </Pressable>
           <ThemedText type="title">Add Member</ThemedText>
         </View>
 

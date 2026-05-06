@@ -6,6 +6,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useGroupStore } from '@/store/groupStore';
+import { useAuthStore } from '@/store/authStore';
 import { useExpenses, useDeleteExpense } from '@/hooks/useExpenses';
 import ExpenseCard from '@/components/ExpenseCard';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
@@ -19,9 +20,26 @@ export default function GroupDetailsScreen() {
   const deleteExpenseMutation = useDeleteExpense(id as string);
 
   const group = groups.find((g) => g.id === id);
+  const currentUserId = useAuthStore((state) => state.user?.id);
   const sortedExpenses = [...expenses].sort(
     (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
   );
+
+  const netBalance = sortedExpenses.reduce((net, expense) => {
+    if (!currentUserId) return net;
+    let balance = 0;
+    if (expense.paidBy === currentUserId) {
+      const othersOwed = expense.splits
+        .filter(s => s.userId !== currentUserId)
+        .reduce((sum, s) => sum + s.owedAmount, 0);
+      balance += othersOwed;
+    }
+    const userSplit = expense.splits?.find(s => s.userId === currentUserId);
+    if (userSplit) balance -= userSplit.owedAmount;
+    return net + balance;
+  }, 0);
+
+  const balanceLabel = netBalance > 0 ? 'You are owed' : netBalance < 0 ? 'You owe' : 'All settled up';
 
   if (!group) {
     return (
@@ -57,9 +75,9 @@ export default function GroupDetailsScreen() {
               {group.name}
             </ThemedText>
             <View style={styles.netBalance}>
-              <ThemedText type="small" themeColor="textSecondary">Total expenses</ThemedText>
-              <ThemedText type="subtitle" style={styles.netAmount}>
-                 ₹{sortedExpenses.reduce((sum, e) => sum + e.amount, 0).toFixed(2)}
+              <ThemedText type="small" themeColor="textSecondary">{balanceLabel}</ThemedText>
+              <ThemedText type="subtitle" style={[styles.netAmount, { color: netBalance > 0 ? Colors.light.success : netBalance < 0 ? Colors.light.danger : Colors.light.text }]}>
+                {netBalance !== 0 ? `₹${Math.abs(netBalance).toFixed(2)}` : '₹0.00'}
               </ThemedText>
             </View>
           </View>

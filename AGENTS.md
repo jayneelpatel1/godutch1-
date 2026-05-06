@@ -341,6 +341,7 @@ Branch: feature/<feature-name>
   3. Report deployment status to user
 * ❌ NEVER deploy without user approval
 * ❌ NEVER deploy before confirming push success
+* ❌ NEVER deploy when committing - deployment is ONLY post-push
 
 ---
 
@@ -376,6 +377,11 @@ main → feature branch → commit → push → PR → merge → deploy (Firebas
 3. **Wait for explicit user approval**
    - Only commit after user says "yes" or "commit"
    - Only push after user says "yes" or "push"
+
+4. **NEVER deploy when committing**
+   - ❌ Deployment only happens AFTER successful push to GitHub
+   - ❌ Never include deployment in commit workflow
+   - ✅ Deploy only when user approves post-push
 
 ## ✅ Commit Checklist (Ask User First!)
 
