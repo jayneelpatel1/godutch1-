@@ -4,7 +4,8 @@ export type ActivityType =
   | 'expense_deleted'
   | 'group_created'
   | 'group_deleted'
-  | 'member_added';
+  | 'member_added'
+  | 'settlement_made';
 
 export interface Activity {
   id: string;

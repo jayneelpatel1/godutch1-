@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useFocusEffect } from 'expo-router';
@@ -11,6 +11,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { useAuthStore } from '@/store/authStore';
 import { useGroups, useDeleteGroup } from '@/hooks/useGroups';
+import { useFetchGroupBalances } from '@/hooks/useSettlements';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 import { deleteOldActivities } from '@/services/activityService';
 import { showToast } from '@/components/Toast';
@@ -21,6 +22,8 @@ export default function HomeScreen() {
   const { groups, isLoading, error, refetch } = useGroups();
   const [refreshing, setRefreshing] = useState(false);
   const deleteGroupMutation = useDeleteGroup();
+  const fetchBalances = useFetchGroupBalances();
+  const [balanceMap, setBalanceMap] = useState<Record<string, number>>({});
 
   useFocusEffect(
     useCallback(() => {
@@ -28,6 +31,21 @@ export default function HomeScreen() {
       refetch();
     }, [refetch])
   );
+
+  useEffect(() => {
+    if (groups.length > 0) {
+      const groupIds = groups.map((g) => g.id);
+      fetchBalances.mutate(groupIds, {
+        onSuccess: (data) => {
+          const map: Record<string, number> = {};
+          data.balances.forEach((b) => {
+            map[b.groupId] = b.netAmount;
+          });
+          setBalanceMap(map);
+        },
+      });
+    }
+  }, [groups.length]);
 
   const handleRefresh = useCallback(async () => {
     setRefreshing(true);
@@ -113,6 +131,7 @@ export default function HomeScreen() {
                   group={group}
                   onPress={() => handleGroupPress(group.id)}
                   onDelete={() => handleDeleteGroup(group.id, group.name)}
+                  balanceAmount={balanceMap[group.id]}
                 />
               ))
             )}

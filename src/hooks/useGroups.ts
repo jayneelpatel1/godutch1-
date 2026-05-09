@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
 import { createGroup, deleteGroup, fetchGroups, updateGroup } from '@/services/groupService';
-import { createOrUpdateUser } from '@/services/userService';
 import type { GroupInput } from '@/types/group';
 
 export function useGroups() {
@@ -52,11 +51,6 @@ export function useCreateGroup() {
 
       // Online-only mode: Skip local SQLite save
       // Offline sync will be implemented in later phase
-
-      const userResult = await createOrUpdateUser(userId);
-      if (!userResult.success) {
-        throw new Error(userResult.error ?? 'Failed to save user details');
-      }
 
       const result = await createGroup(groupInput, userId.id);
       if (result.error) throw new Error(result.error);

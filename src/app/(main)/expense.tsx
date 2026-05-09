@@ -11,7 +11,6 @@ import SplitSelector from '@/components/SplitSelector';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useCreateExpense } from '@/hooks/useExpenses';
-import { useUpsertUser } from '@/hooks/useUser';
 import { showToast, Toast } from '@/components/Toast';
 import { fetchUsersByIds } from '@/services/userService';
 import type { ExpenseSplit, ExpenseCategory, SplitType } from '@/types/expense';
@@ -44,7 +43,6 @@ export default function AddExpenseScreen() {
 
   const groupId = params.groupId || '';
   const createExpenseMutation = useCreateExpense(groupId);
-  const upsertUserMutation = useUpsertUser();
 
   // Clear form when screen is focused (navigated to)
   useFocusEffect(
@@ -85,8 +83,6 @@ export default function AddExpenseScreen() {
     if (!amount || !note || !category || !user?.id) return;
 
     try {
-      await upsertUserMutation.mutateAsync(user);
-
       const finalSplits = splits.length > 0 ? splits : memberNames.map((m) => ({
         userId: m.userId,
         owedAmount: Math.round((parseFloat(amount) / memberNames.length) * 100) / 100,
@@ -131,7 +127,7 @@ export default function AddExpenseScreen() {
     }
   };
 
-  const isLoading = createExpenseMutation.isPending || upsertUserMutation.isPending;
+  const isLoading = createExpenseMutation.isPending;
 
   return (
     <ThemedView style={styles.container}>
