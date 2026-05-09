@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { StyleSheet, View, ScrollView, TextInput, Linking, TouchableOpacity } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
+import { StyleSheet, View, ScrollView, TextInput, Linking, TouchableOpacity, FlatList, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,9 +11,10 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuthStore } from '@/store/authStore';
 import { useCreateGroup } from '@/hooks/useGroups';
 import { useUpsertUser } from '@/hooks/useUser';
-import { checkUserByEmail } from '@/services/userService';
+import { checkUserByEmail, searchUsersByEmail } from '@/services/userService';
 import { isValidEmail } from '@/utils/validators';
 import { Spacing, BorderRadius } from '@/constants/theme';
+import type { User } from '@/types/group';
 
 export default function CreateGroupScreen() {
   const theme = useTheme();
@@ -21,9 +22,57 @@ export default function CreateGroupScreen() {
   const [groupName, setGroupName] = useState('');
   const [memberEmail, setMemberEmail] = useState('');
   const [members, setMembers] = useState<{ email: string; userId: string | null }[]>([]);
+  const [suggestions, setSuggestions] = useState<(User & { id: string })[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const createGroupMutation = useCreateGroup();
   const upsertUserMutation = useUpsertUser();
+
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    const trimmed = memberEmail.trim();
+
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    const id = user?.id;
+
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      const excludeIds = id ? [id] : [];
+      const { users } = await searchUsersByEmail(trimmed, excludeIds);
+      setSearching(false);
+      if (trimmed === memberEmail.trim()) {
+        setSuggestions(users);
+        setShowSuggestions(users.length > 0);
+      }
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [memberEmail, user?.id]);
+
+  const handleSelectSuggestion = (suggestedUser: User & { id: string }) => {
+    if (members.some(m => m.email === suggestedUser.email)) {
+      showToast('error', 'Email already added');
+      setShowSuggestions(false);
+      return;
+    }
+    setMembers([...members, { email: suggestedUser.email, userId: suggestedUser.id }]);
+    setMemberEmail('');
+    setShowSuggestions(false);
+  };
 
   const addMember = async () => {
     if (!memberEmail.trim()) return;
@@ -46,6 +95,7 @@ export default function CreateGroupScreen() {
 
       setMembers([...members, { email: trimmedEmail, userId }]);
       setMemberEmail('');
+      setShowSuggestions(false);
     } catch {
       showToast('error', 'Failed to verify email');
     }
@@ -135,12 +185,19 @@ export default function CreateGroupScreen() {
                 <TextInput
                   style={[styles.emailInput, { color: theme.text }]}
                   value={memberEmail}
-                  onChangeText={setMemberEmail}
+                  onChangeText={(text) => {
+                    setMemberEmail(text);
+                    setShowSuggestions(false);
+                  }}
                   placeholder="Enter email address"
                   placeholderTextColor={theme.textSecondary}
                   keyboardType="email-address"
+                  autoCapitalize="none"
                   onSubmitEditing={addMember}
                 />
+                {searching && (
+                  <ActivityIndicator size="small" color={theme.primary} style={styles.searchSpinner} />
+                )}
               </View>
               <TouchableOpacity
                 style={[styles.addButton, { backgroundColor: theme.primary }]}
@@ -148,6 +205,39 @@ export default function CreateGroupScreen() {
                 <Ionicons name="add" size={24} color="#FFFFFF" />
               </TouchableOpacity>
             </View>
+
+            {showSuggestions && (
+              <View style={[styles.suggestionsList, { backgroundColor: theme.background, borderColor: theme.backgroundElement }]}>
+                <FlatList
+                  data={suggestions}
+                  keyExtractor={(item) => item.id}
+                  renderItem={({ item }) => (
+                    <Pressable
+                      style={({ pressed }) => [
+                        styles.suggestionItem,
+                        { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' },
+                      ]}
+                      onPress={() => handleSelectSuggestion(item)}
+                    >
+                      <View style={[styles.suggestionAvatar, { backgroundColor: theme.primary }]}>
+                        <ThemedText style={styles.suggestionAvatarText}>
+                          {(item.name || item.email).charAt(0).toUpperCase()}
+                        </ThemedText>
+                      </View>
+                      <View style={styles.suggestionInfo}>
+                        <ThemedText style={styles.suggestionName} numberOfLines={1}>
+                          {item.name || 'Unknown'}
+                        </ThemedText>
+                        <ThemedText themeColor="textSecondary" style={styles.suggestionEmail} numberOfLines={1}>
+                          {item.email}
+                        </ThemedText>
+                      </View>
+                      <Ionicons name="add-circle-outline" size={22} color={theme.primary} />
+                    </Pressable>
+                  )}
+                />
+              </View>
+            )}
 
             <View style={styles.memberList}>
               {members.map((member) => (
@@ -225,10 +315,47 @@ const styles = StyleSheet.create({
   },
   emailInputContainer: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
     borderRadius: BorderRadius,
     padding: Spacing.three,
   },
-  emailInput: { fontSize: 16 },
+  emailInput: { flex: 1, fontSize: 16 },
+  searchSpinner: { marginLeft: Spacing.two },
+  suggestionsList: {
+    borderRadius: BorderRadius,
+    borderWidth: 1,
+    overflow: 'hidden',
+    marginTop: Spacing.one,
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.two,
+    gap: Spacing.two,
+  },
+  suggestionAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestionAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  suggestionInfo: {
+    flex: 1,
+  },
+  suggestionName: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  suggestionEmail: {
+    fontSize: 12,
+  },
   addButton: {
     width: 48,
     height: 48,

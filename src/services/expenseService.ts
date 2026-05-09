@@ -1,8 +1,7 @@
 import { supabase } from './supabase';
-import { createActivity } from './activityService';
+import { createActivity, createActivityForGroupMembers } from './activityService';
 
 import type { Expense, ExpenseInput, ExpenseSplit, ExpenseWithSplits } from '@/types/expense';
-import type { ActivityInput } from '@/types/activity';
 
 export async function fetchExpenses(groupId: string): Promise<{ expenses: ExpenseWithSplits[]; error: string | null }> {
   try {
@@ -98,19 +97,34 @@ export async function createExpense(input: ExpenseInput): Promise<{ expense: Exp
       })),
     };
 
-    // Log expense_created activity
+    // DEBUG: Log expense_created activity creation
+    console.log('[expenseService] DEBUG: Creating expense_created activity for creator:', { userId: input.paidBy, groupId: input.groupId, note: input.note, amount: input.amount });
     try {
-      const activityInput: ActivityInput = {
+      const actorResult = await createActivity({
         userId: input.paidBy,
         groupId: input.groupId,
         type: 'expense_created',
         title: `Expense added: ${input.note || expense.category}`,
         description: `₹${input.amount.toFixed(2)} · ${input.category}`,
         metadata: { amount: input.amount, category: input.category, note: input.note },
-      };
-      await createActivity(activityInput);
+      });
+      console.log('[expenseService] DEBUG: Actor activity result:', actorResult);
     } catch (e) {
-      console.error('[expenseService] Failed to log expense_created activity:', e);
+      console.error('[expenseService] DEBUG: Failed to log expense_created activity:', e);
+    }
+
+    // DEBUG: Log group member notification attempt
+    console.log('[expenseService] DEBUG: Creating activities for group members:', { groupId: input.groupId, actorId: input.paidBy });
+    try {
+      const membersResult = await createActivityForGroupMembers(input.groupId, input.paidBy, {
+        type: 'expense_created',
+        title: input.note || 'New expense added',
+        description: `₹${input.amount.toFixed(2)} · ${input.category}`,
+        metadata: { amount: input.amount, category: input.category, note: input.note },
+      });
+      console.log('[expenseService] DEBUG: Group members activity result:', membersResult);
+    } catch (e) {
+      console.error('[expenseService] DEBUG: Failed to notify group members:', e);
     }
 
     return { expense, error: null };
@@ -153,20 +167,31 @@ export async function updateExpense(expenseId: string, updates: Partial<ExpenseI
         .insert(splits);
     }
 
-    // Log expense_updated activity
+    // Log expense_updated activity for the updater
     if (paidBy) {
       try {
-        const activityInput: ActivityInput = {
+        await createActivity({
           userId: paidBy,
           groupId,
           type: 'expense_updated',
           title: 'Expense updated',
           description: updates.note || updates.category || 'Expense details changed',
           metadata: { expenseId, ...updates },
-        };
-        await createActivity(activityInput);
+        });
       } catch (e) {
         console.error('[expenseService] Failed to log expense_updated activity:', e);
+      }
+
+      // Notify all other group members about the update
+      try {
+        await createActivityForGroupMembers(groupId!, paidBy, {
+          type: 'expense_updated',
+          title: 'Expense updated',
+          description: updates.note || 'An expense was modified',
+          metadata: { expenseId, ...updates },
+        });
+      } catch (e) {
+        console.error('[expenseService] Failed to notify group members about update:', e);
       }
     }
 
@@ -183,20 +208,31 @@ export async function deleteExpense(expenseId: string, groupId?: string, paidBy?
       .delete()
       .eq('id', expenseId);
 
-    // Log expense_deleted activity
+    // Log expense_deleted activity for the deleter
     if (paidBy) {
       try {
-        const activityInput: ActivityInput = {
+        await createActivity({
           userId: paidBy,
           groupId,
           type: 'expense_deleted',
           title: 'Expense deleted',
           description: note || 'Expense was removed',
           metadata: { expenseId },
-        };
-        await createActivity(activityInput);
+        });
       } catch (e) {
         console.error('[expenseService] Failed to log expense_deleted activity:', e);
+      }
+
+      // Notify all other group members about the deletion
+      try {
+        await createActivityForGroupMembers(groupId!, paidBy, {
+          type: 'expense_deleted',
+          title: 'Expense deleted',
+          description: note || 'An expense was removed',
+          metadata: { expenseId },
+        });
+      } catch (e) {
+        console.error('[expenseService] Failed to notify group members about deletion:', e);
       }
     }
 

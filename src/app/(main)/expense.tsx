@@ -86,15 +86,19 @@ export default function AddExpenseScreen() {
     if (!amount || !note || !category || !user?.id) return;
 
     try {
-      const finalSplits = splits.length > 0 ? splits : memberNames.map((m) => ({
+      let finalSplits = splits.length > 0 ? splits : memberNames.map((m) => ({
         userId: m.userId,
         owedAmount: Math.round((parseFloat(amount) / memberNames.length) * 100) / 100,
       }));
 
       const totalSplit = finalSplits.reduce((sum, s) => sum + s.owedAmount, 0);
-      if (Math.abs(totalSplit - parseFloat(amount)) > 0.01) {
-        showToast('error', `Split total (₹${totalSplit.toFixed(2)}) must equal amount (₹${parseFloat(amount).toFixed(2)})`);
-        return;
+      const diff = Math.round((parseFloat(amount) - totalSplit) * 100) / 100;
+      if (Math.abs(diff) > 0.01 && finalSplits.length > 0) {
+        finalSplits = finalSplits.map((s, i) =>
+          i === finalSplits.length - 1
+            ? { ...s, owedAmount: Math.round((s.owedAmount + diff) * 100) / 100 }
+            : s
+        );
       }
 
       const expenseInput = {
