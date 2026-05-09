@@ -8,12 +8,14 @@ import { firebaseAuth } from '@/services/firebaseConfig';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuthStore } from '@/store/authStore';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID || '';
 const IOS_CLIENT_ID = process.env.EXPO_PUBLIC_FIREBASE_IOS_CLIENT_ID || '';
 
 export default function LoginScreen() {
+  const theme = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setUser = useAuthStore((state) => state.setUser);
@@ -80,7 +82,7 @@ export default function LoginScreen() {
         <View style={styles.content}>
           <View style={styles.header}>
             <View style={styles.logoContainer}>
-              <Ionicons name="wallet-outline" size={64} color={Colors.light.primary} />
+              <Ionicons name="wallet-outline" size={64} color={theme.primary} />
             </View>
             <ThemedText type="title" style={styles.title}>
               Kharchaa
@@ -91,8 +93,8 @@ export default function LoginScreen() {
           </View>
 
           {error && (
-            <View style={styles.errorContainer}>
-              <Ionicons name="alert-circle-outline" size={16} color={Colors.light.danger} />
+            <View style={[styles.errorContainer, { backgroundColor: theme.danger + '15' }]}>
+              <Ionicons name="alert-circle-outline" size={16} color={theme.danger} />
               <ThemedText type="small" style={styles.errorText}>
                 {error}
               </ThemedText>
@@ -100,7 +102,7 @@ export default function LoginScreen() {
           )}
 
           <Pressable
-            style={[styles.googleButton, isLoading && styles.buttonDisabled]}
+            style={[styles.googleButton, { backgroundColor: theme.primary }, isLoading && styles.buttonDisabled]}
             onPress={handleGoogleSignIn}
             disabled={isLoading}>
             {isLoading ? (
@@ -140,7 +142,7 @@ const styles = StyleSheet.create({
     width: 96,
     height: 96,
     borderRadius: 48,
-    backgroundColor: Colors.light.backgroundElement,
+    backgroundColor: '#F1F5F9',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.four,
@@ -156,18 +158,15 @@ const styles = StyleSheet.create({
   errorContainer: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FEE2E2',
     borderRadius: BorderRadius,
     padding: Spacing.two,
     marginBottom: Spacing.three,
   },
   errorText: {
-    color: Colors.light.danger,
     marginLeft: Spacing.one,
     flex: 1,
   },
   googleButton: {
-    backgroundColor: Colors.light.primary,
     borderRadius: BorderRadius,
     paddingVertical: Spacing.three,
     alignItems: 'center',

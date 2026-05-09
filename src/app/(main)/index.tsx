@@ -12,7 +12,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { useAuthStore } from '@/store/authStore';
 import { useGroups, useDeleteGroup } from '@/hooks/useGroups';
 import { useFetchGroupBalances } from '@/hooks/useSettlements';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
 import { deleteOldActivities } from '@/services/activityService';
 import { showToast } from '@/components/Toast';
 

@@ -80,8 +80,8 @@ export default function GroupCard({ group, onPress, onDelete, balanceAmount }: G
         </View>
         <View style={styles.rightSection}>
           {balanceAmount !== undefined && balanceAmount !== 0 ? (
-            <View style={[styles.balanceBadge, { backgroundColor: balanceAmount > 0 ? '#16A34A20' : '#DC262620' }]}>
-              <ThemedText style={[styles.balanceText, { color: balanceAmount > 0 ? '#16A34A' : '#DC2626' }]}>
+            <View style={[styles.balanceBadge, { backgroundColor: balanceAmount > 0 ? theme.success + '20' : theme.danger + '20' }]}>
+              <ThemedText style={[styles.balanceText, { color: balanceAmount > 0 ? theme.success : theme.danger }]}>
                 {balanceAmount > 0 ? `you are owed ₹${balanceAmount.toFixed(0)}` : `you owe ₹${Math.abs(balanceAmount).toFixed(0)}`}
               </ThemedText>
             </View>

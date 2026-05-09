@@ -12,7 +12,7 @@ import { useExpenses, useDeleteExpense } from '@/hooks/useExpenses';
 import { useDeleteGroup } from '@/hooks/useGroups';
 import { useSettlements, useDeleteSettlement } from '@/hooks/useSettlements';
 import ExpenseCard from '@/components/ExpenseCard';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { showToast } from '@/components/Toast';
 import { computeBalances, computeNetBalance } from '@/utils/balance';
@@ -112,21 +112,9 @@ export default function GroupDetailsScreen() {
   };
 
   const handleDeleteSettlement = (settlementId: string) => {
-    console.log('[Settlement] handleDeleteSettlement called for:', settlementId);
     if (Platform.OS === 'web') {
-      if (window.confirm('Delete this settlement? The balance will be updated accordingly.')) {
-        console.log('[Settlement] Web confirm accepted, deleting:', settlementId);
-        deleteSettlementMutation.mutate(settlementId, {
-          onSuccess: () => {
-            console.log('[Settlement] Delete success:', settlementId);
-            showToast('success', 'Settlement deleted');
-          },
-          onError: (error: any) => {
-            console.error('[Settlement] Delete error:', error);
-            showToast('error', error.message || 'Failed to delete settlement');
-          },
-        });
-      }
+      const confirmed = window.confirm('Delete this settlement? The balance will be updated accordingly.');
+      if (!confirmed) return;
     } else {
       Alert.alert(
         'Delete Settlement',
@@ -136,23 +124,24 @@ export default function GroupDetailsScreen() {
           {
             text: 'Delete',
             style: 'destructive',
-            onPress: () => {
-              console.log('[Settlement] Alert confirm accepted, deleting:', settlementId);
-              deleteSettlementMutation.mutate(settlementId, {
-                onSuccess: () => {
-                  console.log('[Settlement] Delete success:', settlementId);
-                  showToast('success', 'Settlement deleted');
-                },
-                onError: (error: any) => {
-                  console.error('[Settlement] Delete error:', error);
-                  showToast('error', error.message || 'Failed to delete settlement');
-                },
-              });
-            },
+            onPress: () => doDeleteSettlement(settlementId),
           },
         ]
       );
+      return;
     }
+    doDeleteSettlement(settlementId);
+  };
+
+  const doDeleteSettlement = (settlementId: string) => {
+    deleteSettlementMutation.mutate(settlementId, {
+      onSuccess: () => {
+        showToast('success', 'Settlement deleted');
+      },
+      onError: (error: any) => {
+        showToast('error', error.message || 'Failed to delete settlement');
+      },
+    });
   };
 
   const handleDeleteGroup = () => {
@@ -185,7 +174,7 @@ export default function GroupDetailsScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <View style={styles.avatar}>
+            <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
               <ThemedText style={styles.avatarText}>
                 {group.name.charAt(0).toUpperCase()}
               </ThemedText>
@@ -195,7 +184,7 @@ export default function GroupDetailsScreen() {
             </ThemedText>
             <View style={styles.netBalance}>
               <ThemedText type="small" themeColor="textSecondary">{balanceLabel}</ThemedText>
-              <ThemedText type="subtitle" style={[styles.netAmount, { color: netBalance > 0 ? Colors.light.success : netBalance < 0 ? Colors.light.danger : Colors.light.text }]}>
+              <ThemedText type="subtitle" style={[styles.netAmount, { color: netBalance > 0 ? theme.success : netBalance < 0 ? theme.danger : theme.text }]}>
                 {netBalance !== 0 ? `₹${Math.abs(netBalance).toFixed(2)}` : '₹0.00'}
               </ThemedText>
             </View>
@@ -209,7 +198,7 @@ export default function GroupDetailsScreen() {
                 {positiveBalances.map((b) => (
                   <View key={b.userId} style={styles.balanceRow}>
                     <ThemedText type="subtitle">{userMap[b.userId] || 'Loading...'}</ThemedText>
-                    <ThemedText type="subtitle" style={{ color: Colors.light.success }}>₹{b.amount.toFixed(2)}</ThemedText>
+                    <ThemedText type="subtitle" style={{ color: theme.success }}>₹{b.amount.toFixed(2)}</ThemedText>
                   </View>
                 ))}
               </View>
@@ -222,28 +211,28 @@ export default function GroupDetailsScreen() {
                 {negativeBalances.map((b) => (
                   <View key={b.userId} style={styles.balanceRow}>
                     <ThemedText type="subtitle">{userMap[b.userId] || 'Loading...'}</ThemedText>
-                    <ThemedText type="subtitle" style={{ color: Colors.light.danger }}>₹{Math.abs(b.amount).toFixed(2)}</ThemedText>
+                    <ThemedText type="subtitle" style={{ color: theme.danger }}>₹{Math.abs(b.amount).toFixed(2)}</ThemedText>
                   </View>
                 ))}
               </View>
             )}
 
-            <View style={styles.actionRow}>
+            <View style={[styles.actionRow, { backgroundColor: theme.backgroundElement }]}>
             <Pressable style={styles.actionButton} onPress={handleAddExpense}>
-              <Ionicons name="add-circle-outline" size={20} color={Colors.light.primary} />
-              <ThemedText type="small" style={styles.actionText}>Add Expense</ThemedText>
+              <Ionicons name="add-circle-outline" size={20} color={theme.primary} />
+              <ThemedText type="small" style={[styles.actionText, { color: theme.primary }]}>Add Expense</ThemedText>
             </Pressable>
             <Pressable style={styles.actionButton} onPress={() => router.push(`/group/settle-up?groupId=${id}`)}>
-              <Ionicons name="swap-horizontal-outline" size={20} color={Colors.light.text} />
+              <Ionicons name="swap-horizontal-outline" size={20} color={theme.text} />
               <ThemedText type="small" style={styles.actionText}>Settle Up</ThemedText>
             </Pressable>
             <Pressable style={styles.actionButton} onPress={() => router.push(`/group/add-member?groupId=${id}`)}>
-              <Ionicons name="person-add-outline" size={20} color={Colors.light.text} />
+              <Ionicons name="person-add-outline" size={20} color={theme.text} />
               <ThemedText type="small" style={styles.actionText}>Add Member</ThemedText>
             </Pressable>
             <Pressable style={styles.actionButton} onPress={handleDeleteGroup}>
-              <Ionicons name="trash-outline" size={20} color={Colors.light.danger} />
-              <ThemedText type="small" style={[styles.actionText, { color: Colors.light.danger }]}>Delete</ThemedText>
+              <Ionicons name="trash-outline" size={20} color={theme.danger} />
+              <ThemedText type="small" style={[styles.actionText, { color: theme.danger }]}>Delete</ThemedText>
             </Pressable>
           </View>
 
@@ -257,7 +246,7 @@ export default function GroupDetailsScreen() {
               </View>
             ) : allTransactions.length === 0 ? (
               <View style={styles.emptyState}>
-                <Ionicons name="receipt-outline" size={48} color={Colors.light.textSecondary} />
+                <Ionicons name="receipt-outline" size={48} color={theme.textSecondary} />
                 <ThemedText type="subtitle" style={styles.emptyTitle}>No transactions yet</ThemedText>
                 <ThemedText type="small" themeColor="textSecondary" style={styles.emptyText}>
                   Add an expense to start tracking
@@ -280,20 +269,15 @@ export default function GroupDetailsScreen() {
                 const isPayer = settlement.payerId === currentUserId;
                 const isReceiver = settlement.receiverId === currentUserId;
                 return (
-                  <Pressable
+                  <TouchableOpacity
                     key={tx.id}
-                    onPress={() => {
-                      console.log('[Settlement] Card pressed, calling delete for:', tx.id);
-                      handleDeleteSettlement(tx.id);
-                    }}
-                    style={({ pressed }) => [
-                      styles.settlementCard,
-                      pressed && { opacity: 0.85 },
-                    ]}
+                    onPress={() => handleDeleteSettlement(tx.id)}
+                    activeOpacity={0.85}
+                    style={[styles.settlementCard, { backgroundColor: theme.backgroundElement }]}
                   >
                     <View style={styles.settlementContent}>
-                      <View style={styles.settlementIcon}>
-                        <Ionicons name="swap-horizontal" size={20} color={Colors.light.success} />
+                      <View style={[styles.settlementIcon, { backgroundColor: theme.primary + '20' }]}>
+                        <Ionicons name="swap-horizontal" size={20} color={theme.primary} />
                       </View>
                       <View style={styles.settlementInfo}>
                         <ThemedText type="subtitle" style={styles.settlementTitle}>
@@ -311,15 +295,15 @@ export default function GroupDetailsScreen() {
                     <View style={styles.settlementActions}>
                       <ThemedText
                         type="subtitle"
-                        style={[styles.settlementAmount, { color: isReceiver ? Colors.light.success : Colors.light.danger }]}
+                        style={[styles.settlementAmount, { color: isReceiver ? theme.success : theme.danger }]}
                       >
                         {isReceiver ? '+' : '-'}₹{settlement.amount.toFixed(2)}
                       </ThemedText>
-                      <View style={styles.settlementDeleteBtn}>
-                        <Ionicons name="trash-outline" size={16} color={Colors.light.danger} />
+                      <View style={[styles.settlementDeleteBtn, { backgroundColor: theme.danger + '15' }]}>
+                        <Ionicons name="trash-outline" size={16} color={theme.danger} />
                       </View>
                     </View>
-                  </Pressable>
+                  </TouchableOpacity>
                 );
               })
             )}
@@ -343,7 +327,6 @@ const styles = StyleSheet.create({
     width: 64,
     height: 64,
     borderRadius: 32,
-    backgroundColor: Colors.light.primary,
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: Spacing.two,
@@ -379,7 +362,6 @@ const styles = StyleSheet.create({
   actionRow: {
     flexDirection: 'row',
     justifyContent: 'space-around',
-    backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
     padding: Spacing.three,
     marginBottom: Spacing.four,
@@ -399,7 +381,6 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
   },
   settlementCard: {
-    backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
     padding: Spacing.three,
     marginBottom: Spacing.two,
@@ -416,7 +397,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#16A34A20',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.two,
@@ -441,7 +421,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#DC262615',
     marginTop: 2,
   },
   settlementPressed: {

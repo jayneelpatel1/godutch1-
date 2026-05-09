@@ -8,7 +8,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { useActivities } from '@/hooks/useActivities';
 import { deleteOldActivities } from '@/services/activityService';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
 import ActivityItem from '@/components/ActivityItem';
 import Footer from '@/components/footer';
 

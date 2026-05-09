@@ -4,7 +4,8 @@ import { LinearGradient } from 'expo-linear-gradient';
 
 import { ThemedText } from './themed-text';
 import type { Activity } from '@/types/activity';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 interface ActivityItemProps {
   activity: Activity;
@@ -12,7 +13,7 @@ interface ActivityItemProps {
 }
 
 const typeIcons: Record<string, { name: string; colors: [string, string] }> = {
-  expense_created: { name: 'receipt-outline', colors: ['#E5F5EE', '#D1F0E4'] },
+  expense_created: { name: 'receipt-outline', colors: ['#FEF3E2', '#FDE8CC'] },
   expense_updated: { name: 'create-outline', colors: ['#FFF3E0', '#FFE8CC'] },
   expense_deleted: { name: 'trash-outline', colors: ['#FFEBEE', '#FFCDD2'] },
   group_created: { name: 'people-outline', colors: ['#E3F2FD', '#BBDEFB'] },
@@ -36,17 +37,18 @@ function getRelativeTime(dateString: string): string {
 }
 
 export default function ActivityItem({ activity, onPress }: ActivityItemProps) {
+  const theme = useTheme();
   const config = typeIcons[activity.type] || typeIcons.expense_created;
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.container, { backgroundColor: theme.backgroundElement }, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
       onPress={onPress}>
       <View style={styles.iconWrap}>
         <LinearGradient
           colors={config.colors}
           style={styles.iconGradient}>
-          <Ionicons name={config.name as any} size={18} color={Colors.light.primary} />
+          <Ionicons name={config.name as any} size={18} color={theme.primary} />
         </LinearGradient>
       </View>
       <View style={styles.content}>
@@ -65,8 +67,8 @@ export default function ActivityItem({ activity, onPress }: ActivityItemProps) {
         )}
         {activity.metadata?.groupName && (
           <View style={styles.groupBadge}>
-            <Ionicons name="folder-outline" size={12} color={Colors.light.primary} />
-            <ThemedText type="small" style={styles.groupName}>
+            <Ionicons name="folder-outline" size={12} color={theme.primary} />
+            <ThemedText type="small" style={[styles.groupName, { color: theme.primary }]}>
               {activity.metadata.groupName as string}
             </ThemedText>
           </View>
@@ -80,14 +82,9 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
     padding: Spacing.three,
     marginBottom: Spacing.two,
-  },
-  pressed: {
-    opacity: 0.85,
-    transform: [{ scale: 0.98 }],
   },
   iconWrap: {
     marginRight: Spacing.two,
@@ -125,7 +122,6 @@ const styles = StyleSheet.create({
     gap: 4,
   },
   groupName: {
-    color: Colors.light.primary,
     fontWeight: '500',
   },
 });

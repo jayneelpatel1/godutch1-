@@ -4,7 +4,8 @@ import { useRouter } from 'expo-router';
 
 import { ThemedText } from './themed-text';
 import type { Expense, ExpenseSplit } from '@/types/expense';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
+import { useTheme } from '@/hooks/use-theme';
 
 interface ExpenseCardProps {
   expense: Expense;
@@ -28,6 +29,7 @@ const categoryIcons: Record<string, string> = {
 };
 
 export default function ExpenseCard({ expense, onPress, showGroup, splits, paidByName, onDelete, groupId }: ExpenseCardProps) {
+  const theme = useTheme();
   const router = useRouter();
   const icon = categoryIcons[expense.category] || 'ellipsis-horizontal-outline';
 
@@ -68,11 +70,11 @@ export default function ExpenseCard({ expense, onPress, showGroup, splits, paidB
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.container, pressed && styles.pressed]}
+      style={({ pressed }) => [styles.container, { backgroundColor: theme.backgroundElement }, pressed && styles.pressed]}
       onPress={onPress}>
       <View style={styles.leftSection}>
-        <View style={styles.iconWrap}>
-          <Ionicons name={icon as any} size={20} color={Colors.light.primary} />
+        <View style={[styles.iconWrap, { backgroundColor: theme.primary + '18' }]}>
+          <Ionicons name={icon as any} size={20} color={theme.primary} />
         </View>
         <View style={styles.info}>
           <ThemedText type="subtitle" style={styles.note}>
@@ -108,10 +110,10 @@ export default function ExpenseCard({ expense, onPress, showGroup, splits, paidB
         </ThemedText>
         <View style={styles.actionRow}>
           <Pressable onPress={handleEdit} style={styles.actionButton}>
-            <Ionicons name="pencil-outline" size={16} color={Colors.light.primary} />
+            <Ionicons name="pencil-outline" size={16} color={theme.primary} />
           </Pressable>
           <Pressable onPress={handleDelete} style={styles.actionButton}>
-            <Ionicons name="trash-outline" size={16} color={Colors.light.danger} />
+            <Ionicons name="trash-outline" size={16} color={theme.danger} />
           </Pressable>
         </View>
       </View>
@@ -121,7 +123,6 @@ export default function ExpenseCard({ expense, onPress, showGroup, splits, paidB
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: Colors.light.backgroundElement,
     borderRadius: BorderRadius,
     padding: Spacing.three,
     marginBottom: Spacing.two,
@@ -142,7 +143,6 @@ const styles = StyleSheet.create({
     width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: '#E5F5EE',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: Spacing.two,
@@ -161,7 +161,7 @@ const styles = StyleSheet.create({
     marginTop: Spacing.one,
     paddingTop: Spacing.one,
     borderTopWidth: 1,
-    borderTopColor: Colors.light.backgroundSelected,
+    borderTopColor: '#E2E8F0',
   },
   splitRow: {
     flexDirection: 'row',
@@ -171,7 +171,7 @@ const styles = StyleSheet.create({
   },
   splitAmount: {
     fontWeight: '600',
-    color: Colors.light.text,
+    color: '#1E1B4B',
   },
   rightSection: {
     marginLeft: Spacing.two,
@@ -179,7 +179,7 @@ const styles = StyleSheet.create({
   },
   amount: {
     fontWeight: '700',
-    color: Colors.light.text,
+    color: '#1E1B4B',
   },
   actionRow: {
     flexDirection: 'row',

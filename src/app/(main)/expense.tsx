@@ -14,7 +14,7 @@ import { useCreateExpense } from '@/hooks/useExpenses';
 import { showToast, Toast } from '@/components/Toast';
 import { fetchUsersByIds } from '@/services/userService';
 import type { ExpenseSplit, ExpenseCategory, SplitType } from '@/types/expense';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
 
 const categories: { id: ExpenseCategory; label: string; icon: string }[] = [
   { id: 'food', label: 'Food', icon: 'restaurant-outline' },
