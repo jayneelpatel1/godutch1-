@@ -45,14 +45,19 @@ export default function SettleUpScreen() {
   const [settleAmount, setSettleAmount] = useState('');
 
   useEffect(() => {
-    if (memberIds.length > 0) {
-      fetchUsersByIds(memberIds).then(({ users }) => {
+    const memberUserIds = group?.members?.map((m) => m.user_id) || [];
+    const settlementUserIds = settlements.flatMap((s) => [s.payerId, s.receiverId]);
+    const expensePayerIds = expenses.map((e) => e.paidBy);
+    const allIds = [...new Set([...memberUserIds, ...settlementUserIds, ...expensePayerIds])];
+
+    if (allIds.length > 0) {
+      fetchUsersByIds(allIds).then(({ users }) => {
         const map: Record<string, string> = {};
         users.forEach((u) => { map[u.id] = u.name; });
         setUserMap(map);
       });
     }
-  }, [group?.id]);
+  }, [group?.id, settlements.length, expenses.length]);
 
   const sortedExpenses = useMemo(
     () => [...expenses].sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
@@ -99,7 +104,7 @@ export default function SettleUpScreen() {
           showToast('success', 'Settlement recorded successfully');
           setSettlingUserId(null);
           setSettleAmount('');
-          router.back();
+          router.replace(`/group/${groupId}`);
         },
         onError: (error: any) => {
           showToast('error', error.message || 'Failed to record settlement');
@@ -187,7 +192,7 @@ export default function SettleUpScreen() {
                           </ThemedText>
                         </View>
                         <View>
-                          <ThemedText type="subtitle">{userMap[b.userId] || 'Loading...'}</ThemedText>
+                          <ThemedText type="default">{userMap[b.userId] || 'Unknown'}</ThemedText>
                           <ThemedText type="small" style={{ color: theme.success }}>
                             owes you
                           </ThemedText>
@@ -255,7 +260,7 @@ export default function SettleUpScreen() {
                           </ThemedText>
                         </View>
                         <View>
-                          <ThemedText type="subtitle">{userMap[b.userId] || 'Loading...'}</ThemedText>
+                          <ThemedText type="default">{userMap[b.userId] || 'Unknown'}</ThemedText>
                           <ThemedText type="small" style={{ color: theme.danger }}>
                             you owe
                           </ThemedText>
@@ -316,7 +321,7 @@ export default function SettleUpScreen() {
                           <Ionicons name="swap-horizontal" size={18} color={theme.textSecondary} />
                         </View>
                         <View style={styles.pastSettlementInfo}>
-                          <ThemedText type="subtitle" style={{ marginBottom: 2 }}>
+                          <ThemedText type="default" style={{ marginBottom: 2 }}>
                             {isPayer
                               ? `You paid ${userMap[s.receiverId] || 'Unknown'}`
                               : `${userMap[s.payerId] || 'Unknown'} paid you`}
