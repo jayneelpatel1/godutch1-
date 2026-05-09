@@ -319,25 +319,45 @@ export default function GroupDetailsScreen() {
                   Add an expense to start tracking
                 </ThemedText>
               </View>
-            ) : (() => {
-              let currentMonth = '';
-              return allTransactions.map((tx) => {
-                const txDate = tx.type === 'expense'
-                  ? (tx.data.date || tx.createdAt)
-                  : tx.createdAt;
-                const d = new Date(txDate);
-                const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
-                const monthLabel = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
-                const showHeader = monthKey !== currentMonth;
-                if (showHeader) currentMonth = monthKey;
-
+            ) : (
+              allTransactions.map((tx) => {
+                if (tx.type === 'expense') {
+                  return (
+                    <ExpenseCard
+                      key={tx.id}
+                      expense={tx.data}
+                      onPress={() => router.push(`/expense/${tx.id}`)}
+                      onDelete={() => handleDeleteExpense(tx.id)}
+                      groupId={id as string}
+                      paidByName={userMap[tx.data.paidBy] || 'Unknown'}
+                      splits={(tx.data.splits || []).map(s => ({
+                        ...s,
+                        name: userMap[s.userId] || 'Unknown'
+                      }))}
+                    />
+                  );
+                }
+                const settlement = tx.data as Settlement;
+                const isPayer = settlement.payerId === currentUserId;
+                const isReceiver = settlement.receiverId === currentUserId;
                 return (
-                  <View key={tx.id}>
-                    {showHeader && (
-                      <View style={styles.monthHeader}>
-                        <View style={[styles.monthLine, { backgroundColor: theme.backgroundSelected }]} />
-                        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.monthLabel}>
-                          {monthLabel}
+                  <TouchableOpacity
+                    key={tx.id}
+                    onPress={() => handleDeleteSettlement(tx.id)}
+                    activeOpacity={0.85}
+                    style={[styles.settlementCard, { backgroundColor: theme.backgroundElement }]}
+                  >
+                    <View style={styles.settlementContent}>
+                      <View style={[styles.settlementIcon, { backgroundColor: theme.primary + '20' }]}>
+                        <Ionicons name="swap-horizontal" size={20} color={theme.primary} />
+                      </View>
+                      <View style={styles.settlementInfo}>
+                        <ThemedText type="default" style={styles.settlementTitle}>
+                          {isPayer
+                            ? `You paid ${userMap[settlement.receiverId] || 'Unknown'}`
+                            : isReceiver
+                              ? `${userMap[settlement.payerId] || 'Unknown'} paid you`
+                              : `${userMap[settlement.payerId] || 'Unknown'} paid ${userMap[settlement.receiverId] || 'Unknown'}`}
                         </ThemedText>
                         <View style={[styles.monthLine, { backgroundColor: theme.backgroundSelected }]} />
                       </View>

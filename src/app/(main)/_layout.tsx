@@ -96,7 +96,9 @@ function CenteredTabBar({ state, descriptors, navigation }: any) {
                   focused: isFocused,
                   size: 24,
                 })}
-
+                {route.name === 'activity' && (
+                  <View style={[styles.notificationDot, { backgroundColor: colors.danger }]} />
+                )}
               </View>
               <Text
                 style={[
