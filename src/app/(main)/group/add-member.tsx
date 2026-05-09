@@ -107,8 +107,8 @@ export default function AddMemberScreen() {
   };
 
   const handleSendInvite = () => {
-    const subject = 'Join me on Go Dutch';
-    const body = `Hey! Join my expense group on Go Dutch app.\n\nDownload Go Dutch:\n- App Store: [Link coming soon]\n- Play Store: [Link coming soon]`;
+    const subject = 'Join me on Kharchaa';
+    const body = `Hey! Join my expense group on Kharchaa app.\n\nDownload Kharchaa:\n- App Store: [Link coming soon]\n- Play Store: [Link coming soon]`;
     const mailtoUrl = `mailto:${email}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
 
     Linking.openURL(mailtoUrl);

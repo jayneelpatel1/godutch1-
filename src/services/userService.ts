@@ -102,16 +102,14 @@ export async function createOrUpdateUser(authUser: AuthUser): Promise<{ success:
       .eq('id', authUser.id)
       .maybeSingle();
     
-    // Determine the name to save
-    let finalName = authUser.name || '';
-    
-    // If Firebase name is empty or is just the email prefix, use existing Supabase name
-    if (!finalName || finalName === authUser.email?.split('@')[0]) {
-      if (existingUser?.name) {
-        finalName = existingUser.name;
-      } else {
-        finalName = authUser.email?.split('@')[0] || 'User';
-      }
+    let finalName: string;
+
+    if (existingUser?.name) {
+      // User exists — preserve their existing name (never overwrite with Google name)
+      finalName = existingUser.name;
+    } else {
+      // New user — use Google name, fallback to email prefix, then 'User'
+      finalName = authUser.name || authUser.email?.split('@')[0] || 'User';
     }
     
     // Upsert user by ID (Firebase UID is the primary key)

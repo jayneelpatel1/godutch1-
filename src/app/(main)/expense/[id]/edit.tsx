@@ -11,7 +11,6 @@ import SplitSelector from '@/components/SplitSelector';
 import { useAuthStore } from '@/store/authStore';
 import { useGroupStore } from '@/store/groupStore';
 import { useExpense, useUpdateExpense } from '@/hooks/useExpenses';
-import { useUpsertUser } from '@/hooks/useUser';
 import { showToast, Toast } from '@/components/Toast';
 import { fetchUsersByIds } from '@/services/userService';
 import type { ExpenseSplit, ExpenseCategory, SplitType } from '@/types/expense';
@@ -37,7 +36,6 @@ export default function EditExpenseScreen() {
 
   const { expense, isLoading: loadingExpense } = useExpense(id as string);
   const updateExpenseMutation = useUpdateExpense(expense?.groupId || '');
-  const upsertUserMutation = useUpsertUser();
 
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
@@ -79,8 +77,6 @@ export default function EditExpenseScreen() {
     if (!amount || !note || !category || !user?.id || !expense) return;
 
     try {
-      await upsertUserMutation.mutateAsync(user);
-
       const finalSplits = splits.length > 0 ? splits : memberNames.map((m) => ({
         userId: m.userId,
         owedAmount: Math.round((parseFloat(amount) / memberNames.length) * 100) / 100,
@@ -114,7 +110,7 @@ export default function EditExpenseScreen() {
     }
   };
 
-  const isLoading = loadingExpense || updateExpenseMutation.isPending || upsertUserMutation.isPending;
+  const isLoading = loadingExpense || updateExpenseMutation.isPending;
 
   if (loadingExpense) {
     return (
