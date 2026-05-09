@@ -3,7 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
 import { useExpenseStore } from '@/store/expenseStore';
 import { createExpense, deleteExpense, fetchExpenseById, fetchExpenses, updateExpense } from '@/services/expenseService';
-import { createOrUpdateUser } from '@/services/userService';
 import type { ExpenseInput } from '@/types/expense';
 
 export function useExpenses(groupId: string) {
@@ -47,11 +46,6 @@ export function useCreateExpense(groupId: string) {
 
       // Online-only mode: Skip local SQLite save
       // Offline sync will be implemented in later phase
-
-      const userResult = await createOrUpdateUser(userId);
-      if (!userResult.success) {
-        throw new Error(userResult.error ?? 'Failed to save user details');
-      }
 
       const result = await createExpense(expenseInput);
       if (result.error) throw new Error(result.error);

@@ -9,9 +9,10 @@ interface GroupCardProps {
   group: GroupWithMembers;
   onPress?: () => void;
   onDelete?: () => void;
+  balanceAmount?: number;
 }
 
-export default function GroupCard({ group, onPress, onDelete }: GroupCardProps) {
+export default function GroupCard({ group, onPress, onDelete, balanceAmount }: GroupCardProps) {
   const theme = useTheme();
   const members = group.memberCount ? Array(group.memberCount).fill(0).map((_, i) => `user${i + 1}`) : [];
   const displayMembers = members.slice(0, 3);
@@ -78,11 +79,19 @@ export default function GroupCard({ group, onPress, onDelete }: GroupCardProps) 
           )}
         </View>
         <View style={styles.rightSection}>
-          <View style={[styles.balanceBadge, styles.settledBadge]}>
-            <ThemedText style={[styles.balanceText, { color: theme.textSecondary }]}>
-              settled up
-            </ThemedText>
-          </View>
+          {balanceAmount !== undefined && balanceAmount !== 0 ? (
+            <View style={[styles.balanceBadge, { backgroundColor: balanceAmount > 0 ? '#16A34A20' : '#DC262620' }]}>
+              <ThemedText style={[styles.balanceText, { color: balanceAmount > 0 ? '#16A34A' : '#DC2626' }]}>
+                {balanceAmount > 0 ? `you are owed ₹${balanceAmount.toFixed(0)}` : `you owe ₹${Math.abs(balanceAmount).toFixed(0)}`}
+              </ThemedText>
+            </View>
+          ) : (
+            <View style={[styles.balanceBadge, styles.settledBadge]}>
+              <ThemedText style={[styles.balanceText, { color: theme.textSecondary }]}>
+                settled up
+              </ThemedText>
+            </View>
+          )}
           {onDelete && Platform.OS === 'web' && (
             <Pressable onPress={showContextMenu} style={styles.menuButton} hitSlop={8}>
               <Ionicons name="ellipsis-vertical" size={16} color={theme.textSecondary} />

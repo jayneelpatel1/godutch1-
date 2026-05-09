@@ -1,16 +1,16 @@
 {
   "expo": {
-    "name": "godutch1",
-    "slug": "godutch1",
+    "name": "Kharchaa",
+    "slug": "kharchaa",
     "newArchEnabled": true,
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "godutch1",
+    "scheme": "kharchaa",
     "userInterfaceStyle": "automatic",
     "ios": {
       "icon": "./assets/images/icon.png",
-      "bundleIdentifier": "com.godutch1.app"
+      "bundleIdentifier": "com.kharchaa.app"
     },
     "android": {
       "adaptiveIcon": {
@@ -20,7 +20,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.godutch1.app"
+      "package": "com.kharchaa.app"
     },
     "web": {
       "output": "static",

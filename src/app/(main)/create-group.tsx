@@ -89,8 +89,8 @@ export default function CreateGroupScreen() {
       return;
     }
 
-    const subject = `Join my group on Go Dutch`;
-    const body = `Hey! I've created a group "${groupName}" on Go Dutch. Please sign up to join.`;
+    const subject = `Join my group on Kharchaa`;
+    const body = `Hey! I've created a group "${groupName}" on Kharchaa. Please sign up to join.`;
     const url = `mailto:${memberEmail.trim()}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
     
     try {

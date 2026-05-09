@@ -8,7 +8,6 @@ import { firebaseAuth } from '@/services/firebaseConfig';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useAuthStore } from '@/store/authStore';
-import { createOrUpdateUser } from '@/services/userService';
 import { Colors, Spacing, BorderRadius } from '@/constants/theme';
 
 const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID || '';
@@ -33,9 +32,6 @@ export default function LoginScreen() {
       };
 
       setUser(authUser);
-      console.log('[Login] Calling createOrUpdateUser...');
-      const result = await createOrUpdateUser(authUser);
-      console.log('[Login] createOrUpdateUser result:', result);
 
       setIsLoading(false);
     } catch (err: any) {
@@ -60,9 +56,6 @@ export default function LoginScreen() {
       };
 
       setUser(authUser);
-      console.log('[Login] Calling createOrUpdateUser...');
-      const updateResult = await createOrUpdateUser(authUser);
-      console.log('[Login] createOrUpdateUser result:', updateResult);
 
       setIsLoading(false);
     } catch (err: any) {
@@ -90,7 +83,7 @@ export default function LoginScreen() {
               <Ionicons name="wallet-outline" size={64} color={Colors.light.primary} />
             </View>
             <ThemedText type="title" style={styles.title}>
-              Go Dutch
+              Kharchaa
             </ThemedText>
             <ThemedText type="small" themeColor="textSecondary" style={styles.subtitle}>
               Split expenses, settle easily
