@@ -1,9 +1,8 @@
-import { ThemeProvider } from '@react-navigation/native';
+import { ThemeProvider, useLinkBuilder } from '@react-navigation/native';
 import { Tabs } from 'expo-router';
 import React from 'react';
 import { Platform, StyleSheet, View, Pressable, Text, useColorScheme } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useLinkBuilder } from '@react-navigation/native';
 
 import { Colors, Spacing } from '@/constants/theme';
 import { Toast } from '@/components/Toast';
