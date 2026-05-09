@@ -197,7 +197,7 @@ export default function ExpenseDetailsScreen() {
                   Split Details
                 </ThemedText>
                 {(expense.splits || []).map((split) => {
-                  const name = userNames[split.userId] || split.userId;
+                  const name = userNames[split.userId] || 'Unknown';
                   const isPayer = split.userId === expense.paidBy;
                   return (
                     <View key={split.userId} style={[styles.splitRow, { borderBottomColor: theme.backgroundSelected }]}>

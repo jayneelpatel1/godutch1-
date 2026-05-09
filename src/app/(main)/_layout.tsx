@@ -5,7 +5,8 @@ import { Platform, StyleSheet, View, Pressable, Text, useColorScheme } from 'rea
 import { Ionicons } from '@expo/vector-icons';
 import { useLinkBuilder } from '@react-navigation/native';
 
-import { Colors } from '@/constants/theme';
+import { Colors, Spacing } from '@/constants/theme';
+import { Toast } from '@/components/Toast';
 
 const NavDarkTheme = {
   dark: true,
@@ -90,11 +91,16 @@ function CenteredTabBar({ state, descriptors, navigation }: any) {
               onLongPress={onLongPress}
               style={styles.tabItem}
             >
-              {options.tabBarIcon?.({
-                color: isFocused ? colors.primary : colors.textSecondary,
-                focused: isFocused,
-                size: 24,
-              })}
+              <View style={styles.tabIconWrap}>
+                {options.tabBarIcon?.({
+                  color: isFocused ? colors.primary : colors.textSecondary,
+                  focused: isFocused,
+                  size: 24,
+                })}
+                {route.name === 'activity' && (
+                  <View style={[styles.notificationDot, { backgroundColor: colors.danger }]} />
+                )}
+              </View>
               <Text
                 style={[
                   styles.tabLabel,
@@ -202,6 +208,7 @@ export default function TabLayout() {
           }}
         />
       </Tabs>
+      <Toast />
     </ThemeProvider>
   );
 }
@@ -218,17 +225,30 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     maxWidth: 500,
     width: '100%',
-    paddingHorizontal: 8,
+    paddingHorizontal: Spacing.four,
   },
   tabItem: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 8,
+    paddingVertical: Spacing.two,
+  },
+  tabIconWrap: {
+    position: 'relative',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationDot: {
+    position: 'absolute',
+    top: -2,
+    right: -4,
+    width: 8,
+    height: 8,
+    borderRadius: 4,
   },
   tabLabel: {
     fontSize: 12,
     fontWeight: '500' as const,
-    marginTop: 4,
+    marginTop: Spacing.one + 2,
   },
 });

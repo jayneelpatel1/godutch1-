@@ -20,60 +20,71 @@ const typeIcons: Record<string, { name: string; colors: [string, string] }> = {
   member_added: { name: 'person-add-outline', colors: ['#F3E5F5', '#E1BEE7'] },
 };
 
-function getRelativeTime(dateString: string): string {
+function getDateDisplay(dateString: string): { top: string; bottom: string } {
   const date = new Date(dateString);
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const diffMins = Math.floor(diffMs / 60000);
-  const diffHours = Math.floor(diffMins / 60);
-  const diffDays = Math.floor(diffHours / 24);
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const target = new Date(date.getFullYear(), date.getMonth(), date.getDate());
 
-  if (diffMins < 1) return 'Just now';
-  if (diffMins < 60) return `${diffMins}m ago`;
-  if (diffHours < 24) return `${diffHours}h ago`;
-  if (diffDays === 1) return 'Yesterday';
-  if (diffDays < 7) return `${diffDays}d ago`;
-  return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+  if (target.getTime() === today.getTime()) return { top: 'Today', bottom: '' };
+  return {
+    top: date.getDate().toString(),
+    bottom: date.toLocaleDateString('en-US', { month: 'short' }),
+  };
 }
 
 export default function ActivityItem({ activity, onPress }: ActivityItemProps) {
   const theme = useTheme();
   const config = typeIcons[activity.type] || typeIcons.expense_created;
+  const dateDisplay = getDateDisplay(activity.createdAt);
+
+  const rawAmount = activity.metadata?.amount;
+  const amount = typeof rawAmount === 'number' ? rawAmount : null;
 
   return (
     <Pressable
-      style={({ pressed }) => [styles.container, { backgroundColor: theme.backgroundElement }, pressed && { opacity: 0.85, transform: [{ scale: 0.98 }] }]}
+      style={({ pressed }) => [styles.container, { backgroundColor: theme.backgroundElement }, pressed && { opacity: 0.85 }]}
       onPress={onPress}>
+
+      <View style={styles.dateColumn}>
+        <ThemedText style={styles.dateTop}>{dateDisplay.top}</ThemedText>
+        {dateDisplay.bottom ? (
+          <ThemedText type="small" themeColor="textSecondary" style={styles.dateBottom}>{dateDisplay.bottom}</ThemedText>
+        ) : null}
+      </View>
+
       <View style={styles.iconWrap}>
-        <LinearGradient
-          colors={config.colors}
-          style={styles.iconGradient}>
-          <Ionicons name={config.name as any} size={18} color={theme.primary} />
+        <LinearGradient colors={config.colors} style={styles.iconGradient}>
+          <Ionicons name={config.name as any} size={16} color={theme.primary} />
         </LinearGradient>
       </View>
+
       <View style={styles.content}>
-        <View style={styles.headerRow}>
-          <ThemedText type="subtitle" style={styles.title}>
-            {activity.title}
-          </ThemedText>
-          <ThemedText type="small" themeColor="textSecondary" style={styles.time}>
-            {getRelativeTime(activity.createdAt)}
-          </ThemedText>
-        </View>
-        {activity.description && (
-          <ThemedText type="small" themeColor="textSecondary" style={styles.description}>
+        <ThemedText style={styles.title} numberOfLines={1}>
+          {activity.title}
+        </ThemedText>
+        {activity.description ? (
+          <ThemedText type="small" themeColor="textSecondary" style={styles.description} numberOfLines={1}>
             {activity.description}
           </ThemedText>
-        )}
-        {activity.metadata?.groupName && (
+        ) : null}
+        {activity.metadata?.groupName ? (
           <View style={styles.groupBadge}>
-            <Ionicons name="folder-outline" size={12} color={theme.primary} />
+            <Ionicons name="folder-outline" size={10} color={theme.primary} />
             <ThemedText type="small" style={[styles.groupName, { color: theme.primary }]}>
               {activity.metadata.groupName as string}
             </ThemedText>
           </View>
-        )}
+        ) : null}
       </View>
+
+      {amount !== null ? (
+        <View style={styles.amountColumn}>
+          <ThemedText style={[styles.amountText, { color: theme.primary }]}>
+            {'\u20B9'}{amount.toFixed(2)}
+          </ThemedText>
+        </View>
+      ) : null}
     </Pressable>
   );
 }
@@ -81,14 +92,32 @@ export default function ActivityItem({ activity, onPress }: ActivityItemProps) {
 const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     borderRadius: BorderRadius,
-    padding: Spacing.three,
-    marginBottom: Spacing.two,
+    paddingVertical: Spacing.three,
+    paddingHorizontal: Spacing.three,
+    marginBottom: Spacing.one,
+  },
+  dateColumn: {
+    width: 44,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: Spacing.two,
+  },
+  dateTop: {
+    fontSize: 16,
+    fontWeight: '700',
+    lineHeight: 20,
+    textAlign: 'center',
+  },
+  dateBottom: {
+    fontSize: 11,
+    lineHeight: 14,
+    textAlign: 'center',
+    marginTop: 1,
   },
   iconWrap: {
     marginRight: Spacing.two,
-    marginTop: 2,
   },
   iconGradient: {
     width: 36,
@@ -99,29 +128,33 @@ const styles = StyleSheet.create({
   },
   content: {
     flex: 1,
-  },
-  headerRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
-  },
-  title: {
-    flex: 1,
     marginRight: Spacing.two,
   },
-  time: {
-    flexShrink: 0,
+  title: {
+    fontSize: 15,
+    fontWeight: '600',
+    lineHeight: 20,
   },
   description: {
-    marginTop: 2,
+    marginTop: 1,
   },
   groupBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing.one,
-    gap: 4,
+    marginTop: 2,
+    gap: 3,
   },
   groupName: {
     fontWeight: '500',
+    fontSize: 11,
+  },
+  amountColumn: {
+    alignItems: 'flex-end',
+    justifyContent: 'center',
+    minWidth: 70,
+  },
+  amountText: {
+    fontSize: 15,
+    fontWeight: '700',
   },
 });

@@ -145,7 +145,7 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
 
   const getMemberName = (userId: string): string => {
     const member = members.find((m) => m.userId === userId);
-    return member?.name || userId;
+    return member?.name || 'Unknown';
   };
 
   const totalOwed = splits.reduce((sum, s) => sum + s.owedAmount, 0);
