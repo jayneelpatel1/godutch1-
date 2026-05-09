@@ -210,7 +210,7 @@ export default function ExpenseDetailsScreen() {
                             <ThemedText style={styles.splitText}>
                               <ThemedText style={styles.splitName}>{name}</ThemedText>
                               <ThemedText type="small" themeColor="textSecondary"> paid </ThemedText>
-                              <ThemedText style={styles.splitPaidAmount}>₹{expense.amount.toFixed(2)}</ThemedText>
+                              <ThemedText style={[styles.splitPaidAmount, { color: theme.primary }]}>₹{expense.amount.toFixed(2)}</ThemedText>
                               <ThemedText type="small" themeColor="textSecondary"> and owes </ThemedText>
                               <ThemedText style={[styles.splitOwesAmount, { color: theme.danger }]}>₹{split.owedAmount.toFixed(2)}</ThemedText>
                             </ThemedText>
@@ -334,7 +334,6 @@ const styles = StyleSheet.create({
   },
   splitPaidAmount: {
     fontWeight: '600',
-    color: '#4CAF50',
   },
   splitOwesAmount: {
     fontWeight: '600',

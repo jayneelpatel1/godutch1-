@@ -13,7 +13,7 @@ import { useCreateGroup } from '@/hooks/useGroups';
 import { useUpsertUser } from '@/hooks/useUser';
 import { checkUserByEmail } from '@/services/userService';
 import { isValidEmail } from '@/utils/validators';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
 
 export default function CreateGroupScreen() {
   const theme = useTheme();

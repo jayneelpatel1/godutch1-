@@ -4,6 +4,7 @@ import {
   View,
   ScrollView,
   Pressable,
+  TouchableOpacity,
   TextInput,
   Alert,
   Platform,
@@ -21,7 +22,7 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useSettlements, useCreateSettlement, useDeleteSettlement } from '@/hooks/useSettlements';
 import { computeBalances } from '@/utils/balance';
 import { fetchUsersByIds } from '@/services/userService';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 import { showToast } from '@/components/Toast';
 
@@ -187,12 +188,12 @@ export default function SettleUpScreen() {
                         </View>
                         <View>
                           <ThemedText type="subtitle">{userMap[b.userId] || 'Loading...'}</ThemedText>
-                          <ThemedText type="small" style={{ color: Colors.light.success }}>
+                          <ThemedText type="small" style={{ color: theme.success }}>
                             owes you
                           </ThemedText>
                         </View>
                       </View>
-                      <ThemedText type="subtitle" style={{ color: Colors.light.success, fontWeight: '700' }}>
+                      <ThemedText type="subtitle" style={{ color: theme.success, fontWeight: '700' }}>
                         ₹{b.amount.toFixed(2)}
                       </ThemedText>
                     </Pressable>
@@ -255,12 +256,12 @@ export default function SettleUpScreen() {
                         </View>
                         <View>
                           <ThemedText type="subtitle">{userMap[b.userId] || 'Loading...'}</ThemedText>
-                          <ThemedText type="small" style={{ color: Colors.light.danger }}>
+                          <ThemedText type="small" style={{ color: theme.danger }}>
                             you owe
                           </ThemedText>
                         </View>
                       </View>
-                      <ThemedText type="subtitle" style={{ color: Colors.light.danger, fontWeight: '700' }}>
+                      <ThemedText type="subtitle" style={{ color: theme.danger, fontWeight: '700' }}>
                         ₹{Math.abs(b.amount).toFixed(2)}
                       </ThemedText>
                     </Pressable>
@@ -304,17 +305,11 @@ export default function SettleUpScreen() {
                 {settlements.map((s) => {
                   const isPayer = s.payerId === currentUserId;
                   return (
-                    <Pressable
+                    <TouchableOpacity
                       key={s.id}
-                      onPress={() => {
-                        console.log('[Settlement] Past settlement card pressed:', s.id);
-                        handleDeleteSettlement(s.id);
-                      }}
-                      style={({ pressed }) => [
-                        styles.pastSettlementCard,
-                        { backgroundColor: theme.backgroundElement },
-                        pressed && { opacity: 0.85 },
-                      ]}
+                      onPress={() => handleDeleteSettlement(s.id)}
+                      activeOpacity={0.85}
+                      style={[styles.pastSettlementCard, { backgroundColor: theme.backgroundElement }]}
                     >
                       <View style={styles.pastSettlementContent}>
                         <View style={[styles.pastSettlementIcon, { backgroundColor: theme.textSecondary + '30' }]}>
@@ -335,11 +330,11 @@ export default function SettleUpScreen() {
                         <ThemedText type="subtitle" style={{ color: theme.textSecondary, fontWeight: '700' }}>
                           ₹{s.amount.toFixed(2)}
                         </ThemedText>
-                        <View style={styles.pastSettlementDeleteBtn}>
-                          <Ionicons name="trash-outline" size={16} color={Colors.light.danger} />
+                        <View style={[styles.pastSettlementDeleteBtn, { backgroundColor: theme.danger + '15' }]}>
+                          <Ionicons name="trash-outline" size={16} color={theme.danger} />
                         </View>
                       </View>
-                    </Pressable>
+                    </TouchableOpacity>
                   );
                 })}
               </View>
@@ -487,7 +482,6 @@ const styles = StyleSheet.create({
     borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: '#DC262615',
     marginTop: 2,
   },
   emptyState: {

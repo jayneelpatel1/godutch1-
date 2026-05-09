@@ -8,7 +8,7 @@ import { router } from 'expo-router';
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
-import { Colors, Spacing, BorderRadius } from '@/constants/theme';
+import { Spacing, BorderRadius } from '@/constants/theme';
 import { useAuthStore } from '@/store/authStore';
 import { signOut } from '@/services/authService';
 import { updateUser } from '@/services/userService';
