@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo, useCallback } from 'react';
-import { StyleSheet, View, ScrollView, Pressable, ActivityIndicator, Alert, Platform, TouchableOpacity } from 'react-native';
+import { StyleSheet, View, ScrollView, Pressable, ActivityIndicator, Alert, Platform, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,6 +17,7 @@ import { useTheme } from '@/hooks/use-theme';
 import { showToast } from '@/components/Toast';
 import { computeBalances, computeNetBalance } from '@/utils/balance';
 import { fetchUsersByIds } from '@/services/userService';
+import { updateGroup } from '@/services/groupService';
 import type { Settlement } from '@/types/settlement';
 
 export default function GroupDetailsScreen() {
@@ -31,8 +32,52 @@ export default function GroupDetailsScreen() {
 
   const group = groups.find((g) => g.id === id);
   const currentUserId = useAuthStore((state) => state.user?.id);
+  const { updateGroup: updateGroupStore } = useGroupStore();
+  const [showRenameModal, setShowRenameModal] = useState(false);
+  const [renameText, setRenameText] = useState('');
+  const [renaming, setRenaming] = useState(false);
+
+  const handleRename = async () => {
+    try {
+      const trimmed = renameText.trim();
+      if (!trimmed) {
+        showToast('error', 'Group name cannot be empty');
+        return;
+      }
+
+      if (trimmed === group?.name) {
+        setShowRenameModal(false);
+        return;
+      }
+
+      const groupId = Array.isArray(id) ? id[0] : id;
+      if (!groupId) {
+        showToast('error', 'Group ID not found');
+        return;
+      }
+
+      setRenaming(true);
+
+      const { error } = await updateGroup(groupId, { name: trimmed });
+      if (error) {
+        setRenaming(false);
+        showToast('error', error || 'Failed to rename group');
+        return;
+      }
+
+      updateGroupStore(groupId, { name: trimmed });
+      showToast('success', 'Group renamed');
+      setRenaming(false);
+      setShowRenameModal(false);
+    } catch (e) {
+      console.error('[GroupDetail] Rename failed:', e);
+      setRenaming(false);
+      showToast('error', 'Something went wrong');
+    }
+  };
+
   const sortedExpenses = [...expenses].sort(
-    (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+    (a, b) => new Date(b.date || b.createdAt).getTime() - new Date(a.date || a.createdAt).getTime()
   );
 
   const memberIds = group?.members?.map((m) => m.user_id) || [];
@@ -78,9 +123,15 @@ export default function GroupDetailsScreen() {
       createdAt: s.createdAt,
       data: s,
     }));
-    return [...expenseEntries, ...settlementEntries].sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
-    );
+    return [...expenseEntries, ...settlementEntries].sort((a, b) => {
+      const aTime = a.type === 'expense'
+        ? new Date(a.data.date || a.createdAt).getTime()
+        : new Date(a.createdAt).getTime();
+      const bTime = b.type === 'expense'
+        ? new Date(b.data.date || b.createdAt).getTime()
+        : new Date(b.createdAt).getTime();
+      return bTime - aTime;
+    });
   }, [sortedExpenses, settlements]);
 
   const balanceLabel = netBalance > 0 ? 'You are owed' : netBalance < 0 ? 'You owe' : 'All settled up';
@@ -178,18 +229,32 @@ export default function GroupDetailsScreen() {
     <ThemedView style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false} contentContainerStyle={styles.scrollContent}>
-          <View style={styles.header}>
-            <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
-              <ThemedText style={styles.avatarText}>
-                {group.name.charAt(0).toUpperCase()}
-              </ThemedText>
+          <View style={[styles.headerCard, { backgroundColor: theme.backgroundElement }]}>
+            <View style={styles.headerTop}>
+              <View style={[styles.avatar, { backgroundColor: theme.primary }]}>
+                <ThemedText style={styles.avatarText}>
+                  {group.name.charAt(0).toUpperCase()}
+                </ThemedText>
+              </View>
+              <View style={styles.headerInfo}>
+                <View style={styles.nameRow}>
+                  <ThemedText type="subtitle" style={styles.groupName}>
+                    {group.name}
+                  </ThemedText>
+                  <Pressable onPress={() => { setRenameText(group.name); setShowRenameModal(true); }} style={styles.editButton}>
+                    <Ionicons name="pencil" size={16} color={theme.textSecondary} />
+                  </Pressable>
+                </View>
+                <ThemedText type="small" themeColor="textSecondary">
+                  {group.members?.length || 0} members
+                </ThemedText>
+              </View>
             </View>
-            <ThemedText type="title" style={styles.groupName}>
-              {group.name}
-            </ThemedText>
-            <View style={styles.netBalance}>
-              <ThemedText type="small" themeColor="textSecondary">{balanceLabel}</ThemedText>
-              <ThemedText type="subtitle" style={[styles.netAmount, { color: netBalance > 0 ? theme.success : netBalance < 0 ? theme.danger : theme.text }]}>
+            <View style={[styles.balanceCard, { backgroundColor: netBalance > 0 ? theme.success + '15' : netBalance < 0 ? theme.danger + '15' : theme.backgroundSelected }]}>
+              <ThemedText type="small" style={[styles.balanceLabel, { color: netBalance > 0 ? theme.success : netBalance < 0 ? theme.danger : theme.textSecondary }]}>
+                {balanceLabel}
+              </ThemedText>
+              <ThemedText type="title" style={[styles.netAmount, { color: netBalance > 0 ? theme.success : netBalance < 0 ? theme.danger : theme.text }]}>
                 {netBalance !== 0 ? `₹${Math.abs(netBalance).toFixed(2)}` : '₹0.00'}
               </ThemedText>
             </View>
@@ -242,9 +307,6 @@ export default function GroupDetailsScreen() {
           </View>
 
           <View style={styles.section}>
-            <ThemedText type="small" themeColor="textSecondary" style={styles.sectionLabel}>
-              TRANSACTIONS ({allTransactions.length})
-            </ThemedText>
             {isLoading ? (
               <View style={styles.emptyState}>
                 <ActivityIndicator size="large" color={theme.primary} />
@@ -257,68 +319,116 @@ export default function GroupDetailsScreen() {
                   Add an expense to start tracking
                 </ThemedText>
               </View>
-            ) : (
-              allTransactions.map((tx) => {
-                if (tx.type === 'expense') {
-                  return (
-                    <ExpenseCard
-                      key={tx.id}
-                      expense={tx.data}
-                      onPress={() => router.push(`/expense/${tx.id}`)}
-                      onDelete={() => handleDeleteExpense(tx.id)}
-                      groupId={id as string}
-                      paidByName={userMap[tx.data.paidBy] || 'Unknown'}
-                      splits={(tx.data.splits || []).map(s => ({
-                        ...s,
-                        name: userMap[s.userId] || 'Unknown'
-                      }))}
-                    />
-                  );
-                }
-                const settlement = tx.data as Settlement;
-                const isPayer = settlement.payerId === currentUserId;
-                const isReceiver = settlement.receiverId === currentUserId;
+            ) : (() => {
+              let currentMonth = '';
+              return allTransactions.map((tx) => {
+                const txDate = tx.type === 'expense'
+                  ? (tx.data.date || tx.createdAt)
+                  : tx.createdAt;
+                const d = new Date(txDate);
+                const monthKey = `${d.getFullYear()}-${d.getMonth()}`;
+                const monthLabel = d.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+                const showHeader = monthKey !== currentMonth;
+                if (showHeader) currentMonth = monthKey;
+
                 return (
-                  <TouchableOpacity
-                    key={tx.id}
-                    onPress={() => handleDeleteSettlement(tx.id)}
-                    activeOpacity={0.85}
-                    style={[styles.settlementCard, { backgroundColor: theme.backgroundElement }]}
-                  >
-                    <View style={styles.settlementContent}>
-                      <View style={[styles.settlementIcon, { backgroundColor: theme.primary + '20' }]}>
-                        <Ionicons name="swap-horizontal" size={20} color={theme.primary} />
-                      </View>
-                      <View style={styles.settlementInfo}>
-                        <ThemedText type="default" style={styles.settlementTitle}>
-                          {isPayer
-                            ? `You paid ${userMap[settlement.receiverId] || 'Unknown'}`
-                            : isReceiver
-                              ? `${userMap[settlement.payerId] || 'Unknown'} paid you`
-                              : `${userMap[settlement.payerId] || 'Unknown'} paid ${userMap[settlement.receiverId] || 'Unknown'}`}
+                  <View key={tx.id}>
+                    {showHeader && (
+                      <View style={styles.monthHeader}>
+                        <View style={[styles.monthLine, { backgroundColor: theme.backgroundSelected }]} />
+                        <ThemedText type="smallBold" themeColor="textSecondary" style={styles.monthLabel}>
+                          {monthLabel}
                         </ThemedText>
-                        <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: 2 }}>
-                          Settlement · {new Date(settlement.createdAt).toLocaleDateString()}
-                        </ThemedText>
+                        <View style={[styles.monthLine, { backgroundColor: theme.backgroundSelected }]} />
                       </View>
-                    </View>
-                    <View style={styles.settlementActions}>
-                      <ThemedText
-                        type="subtitle"
-                        style={[styles.settlementAmount, { color: isReceiver ? theme.success : theme.danger }]}
-                      >
-                        {isReceiver ? '+' : '-'}₹{settlement.amount.toFixed(2)}
-                      </ThemedText>
-                      <View style={[styles.settlementDeleteBtn, { backgroundColor: theme.danger + '15' }]}>
-                        <Ionicons name="trash-outline" size={16} color={theme.danger} />
-                      </View>
-                    </View>
-                  </TouchableOpacity>
+                    )}
+                    {tx.type === 'expense' ? (
+                      <ExpenseCard
+                        expense={tx.data}
+                        onPress={() => router.push(`/expense/${tx.id}`)}
+                        onDelete={() => handleDeleteExpense(tx.id)}
+                        groupId={id as string}
+                        paidByName={userMap[tx.data.paidBy] || 'Unknown'}
+                        splits={(tx.data.splits || []).map(s => ({
+                          ...s,
+                          name: userMap[s.userId] || 'Unknown'
+                        }))}
+                      />
+                    ) : (() => {
+                      const settlement = tx.data as Settlement;
+                      const isPayer = settlement.payerId === currentUserId;
+                      const isReceiver = settlement.receiverId === currentUserId;
+                      return (
+                        <TouchableOpacity
+                          onPress={() => handleDeleteSettlement(tx.id)}
+                          activeOpacity={0.85}
+                          style={[styles.settlementCard, { backgroundColor: theme.backgroundElement }]}
+                        >
+                          <View style={styles.settlementContent}>
+                            <View style={[styles.settlementIcon, { backgroundColor: theme.primary + '20' }]}>
+                              <Ionicons name="swap-horizontal" size={20} color={theme.primary} />
+                            </View>
+                            <View style={styles.settlementInfo}>
+                              <ThemedText type="default" style={styles.settlementTitle}>
+                                {isPayer
+                                  ? `You paid ${userMap[settlement.receiverId] || 'Unknown'}`
+                                  : isReceiver
+                                    ? `${userMap[settlement.payerId] || 'Unknown'} paid you`
+                                    : `${userMap[settlement.payerId] || 'Unknown'} paid ${userMap[settlement.receiverId] || 'Unknown'}`}
+                              </ThemedText>
+                              <ThemedText type="small" themeColor="textSecondary" style={{ marginTop: 2 }}>
+                                Settlement · {new Date(settlement.createdAt).toLocaleDateString()}
+                              </ThemedText>
+                            </View>
+                          </View>
+                          <View style={styles.settlementActions}>
+                            <ThemedText
+                              type="subtitle"
+                              style={[styles.settlementAmount, { color: isReceiver ? theme.success : theme.danger }]}
+                            >
+                              {isReceiver ? '+' : '-'}₹{settlement.amount.toFixed(2)}
+                            </ThemedText>
+                            <View style={[styles.settlementDeleteBtn, { backgroundColor: theme.danger + '15' }]}>
+                              <Ionicons name="trash-outline" size={16} color={theme.danger} />
+                            </View>
+                          </View>
+                        </TouchableOpacity>
+                      );
+                    })()}
+                  </View>
                 );
-              })
-            )}
+              });
+            })()}
           </View>
         </ScrollView>
+
+        <Modal visible={showRenameModal} transparent animationType="fade" onRequestClose={() => setShowRenameModal(false)}>
+          <Pressable style={styles.modalOverlay} onPress={() => setShowRenameModal(false)}>
+            <Pressable style={[styles.modalContent, { backgroundColor: theme.background }]} onPress={() => {}}>
+              <ThemedText type="subtitle" style={styles.modalTitle}>Rename Group</ThemedText>
+              <TextInput
+                style={[styles.modalInput, { color: theme.text, borderColor: theme.backgroundElement, backgroundColor: theme.backgroundElement }]}
+                value={renameText}
+                onChangeText={setRenameText}
+                placeholder="Group name"
+                placeholderTextColor={theme.textSecondary}
+                autoFocus
+              />
+              <View style={styles.modalActions}>
+                <Pressable style={[styles.modalBtn, { backgroundColor: theme.backgroundElement }]} onPress={() => setShowRenameModal(false)}>
+                  <ThemedText>Cancel</ThemedText>
+                </Pressable>
+                <Pressable style={[styles.modalBtn, { backgroundColor: theme.primary }]} onPress={handleRename} disabled={renaming}>
+                  {renaming ? (
+                    <ActivityIndicator size="small" color="#FFF" />
+                  ) : (
+                    <ThemedText style={{ color: '#FFF', fontWeight: '600' }}>Save</ThemedText>
+                  )}
+                </Pressable>
+              </View>
+            </Pressable>
+          </Pressable>
+        </Modal>
       </SafeAreaView>
     </ThemedView>
   );
@@ -329,31 +439,56 @@ const styles = StyleSheet.create({
   safeArea: { flex: 1, paddingHorizontal: Spacing.three },
   scrollView: { flex: 1 },
   scrollContent: { paddingBottom: 100 },
-  header: {
+  headerCard: {
+    borderRadius: BorderRadius + 4,
+    padding: Spacing.four,
+    marginBottom: Spacing.four,
+    marginTop: Spacing.three,
+  },
+  headerTop: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: Spacing.four,
+    marginBottom: Spacing.three,
   },
   avatar: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: 52,
+    height: 52,
+    borderRadius: 26,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: Spacing.two,
   },
   avatarText: {
     color: '#FFFFFF',
-    fontSize: 28,
+    fontSize: 22,
     fontWeight: '600',
   },
-  groupName: { marginBottom: Spacing.one },
-  netBalance: {
+  headerInfo: {
+    flex: 1,
+    marginLeft: Spacing.three,
+  },
+  nameRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginTop: Spacing.one,
+    gap: Spacing.one,
+  },
+  groupName: {
+    fontSize: 24,
+    lineHeight: 32,
+  },
+  editButton: {
+    padding: Spacing.one,
+  },
+  balanceCard: {
+    borderRadius: BorderRadius,
+    padding: Spacing.three,
+    alignItems: 'center',
+  },
+  balanceLabel: {
+    fontWeight: '500',
+    marginBottom: Spacing.half,
   },
   netAmount: {
-    fontWeight: '700',
-    marginTop: Spacing.half,
+    fontWeight: '800',
   },
   balancesSection: {
     marginBottom: Spacing.three,
@@ -436,6 +571,56 @@ const styles = StyleSheet.create({
   settlementPressed: {
     opacity: 0.85,
     transform: [{ scale: 0.98 }],
+  },
+  modalOverlay: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    padding: Spacing.four,
+  },
+  modalContent: {
+    width: '100%',
+    maxWidth: 400,
+    borderRadius: BorderRadius + 4,
+    padding: Spacing.four,
+  },
+  modalTitle: {
+    fontSize: 22,
+    lineHeight: 30,
+    marginBottom: Spacing.three,
+  },
+  modalInput: {
+    borderWidth: 1,
+    borderRadius: BorderRadius,
+    padding: Spacing.three,
+    fontSize: 16,
+    marginBottom: Spacing.three,
+  },
+  modalActions: {
+    flexDirection: 'row',
+    gap: Spacing.two,
+    justifyContent: 'flex-end',
+  },
+  modalBtn: {
+    paddingVertical: Spacing.two,
+    paddingHorizontal: Spacing.four,
+    borderRadius: BorderRadius,
+    alignItems: 'center',
+  },
+  monthHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: Spacing.three,
+    gap: Spacing.two,
+  },
+  monthLine: {
+    flex: 1,
+    height: 1,
+  },
+  monthLabel: {
+    fontSize: 13,
+    letterSpacing: 0.5,
   },
   emptyState: {
     alignItems: 'center',

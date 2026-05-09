@@ -1,5 +1,5 @@
-import { useState, useCallback, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Pressable, Linking, ActivityIndicator } from 'react-native';
+import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
+import { StyleSheet, View, TextInput, Pressable, Linking, ActivityIndicator, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useLocalSearchParams, router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -9,7 +9,7 @@ import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { useGroupStore } from '@/store/groupStore';
 import { addGroupMember } from '@/services/groupService';
-import { checkUserByEmail, fetchUsersByIds } from '@/services/userService';
+import { checkUserByEmail, fetchUsersByIds, searchUsersByEmail } from '@/services/userService';
 import { isValidEmail } from '@/utils/validators';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { Toast, showToast } from '@/components/Toast';
@@ -25,6 +25,10 @@ export default function AddMemberScreen() {
   const [showInvite, setShowInvite] = useState(false);
   const [members, setMembers] = useState<(User & { id: string })[]>([]);
   const [loadingMembers, setLoadingMembers] = useState(true);
+  const [suggestions, setSuggestions] = useState<(User & { id: string })[]>([]);
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [searching, setSearching] = useState(false);
+  const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const group = groups.find((g) => g.id === groupId);
 
@@ -47,11 +51,48 @@ export default function AddMemberScreen() {
     });
   }, [group?.id]);
 
+  const memberIds = useMemo(() => members.map((m) => m.id), [members]);
+
+  useEffect(() => {
+    if (debounceRef.current) {
+      clearTimeout(debounceRef.current);
+    }
+
+    const trimmed = email.trim();
+
+    if (trimmed.length < 2) {
+      setSuggestions([]);
+      setShowSuggestions(false);
+      return;
+    }
+
+    debounceRef.current = setTimeout(async () => {
+      setSearching(true);
+      const { users } = await searchUsersByEmail(trimmed, memberIds);
+      setSuggestions(users);
+      setShowSuggestions(users.length > 0);
+      setSearching(false);
+    }, 300);
+
+    return () => {
+      if (debounceRef.current) {
+        clearTimeout(debounceRef.current);
+      }
+    };
+  }, [email, memberIds]);
+
+  const handleSelectSuggestion = (user: User & { id: string }) => {
+    setEmail(user.email);
+    setShowSuggestions(false);
+  };
+
   useFocusEffect(
     useCallback(() => {
       return () => {
         setEmail('');
         setShowInvite(false);
+        setSuggestions([]);
+        setShowSuggestions(false);
       };
     }, [])
   );
@@ -154,19 +195,56 @@ export default function AddMemberScreen() {
           </ThemedText>
           <View style={styles.inputRow}>
             <TextInput
-                style={[styles.input, { color: theme.text }]}
-                value={email}
-                onChangeText={(text) => {
-                  setEmail(text);
-                  setShowInvite(false);
-                }}
-                placeholder="Enter email address"
-                placeholderTextColor={theme.textSecondary}
-                keyboardType="email-address"
-                autoCapitalize="none"
-                autoFocus
-              />
+              style={[styles.input, { color: theme.text }]}
+              value={email}
+              onChangeText={(text) => {
+                setEmail(text);
+                setShowInvite(false);
+                setShowSuggestions(false);
+              }}
+              placeholder="Enter email address"
+              placeholderTextColor={theme.textSecondary}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoFocus
+            />
+            {searching && (
+              <ActivityIndicator size="small" color={theme.primary} style={styles.searchSpinner} />
+            )}
           </View>
+
+          {showSuggestions && (
+            <View style={[styles.suggestionsList, { backgroundColor: theme.background, borderColor: theme.backgroundElement }]}>
+              <FlatList
+                data={suggestions}
+                keyExtractor={(item) => item.id}
+                renderItem={({ item }) => (
+                  <Pressable
+                    style={({ pressed }) => [
+                      styles.suggestionItem,
+                      { backgroundColor: pressed ? theme.backgroundSelected : 'transparent' },
+                    ]}
+                    onPress={() => handleSelectSuggestion(item)}
+                  >
+                    <View style={[styles.suggestionAvatar, { backgroundColor: theme.primary }]}>
+                      <ThemedText style={styles.suggestionAvatarText}>
+                        {(item.name || item.email).charAt(0).toUpperCase()}
+                      </ThemedText>
+                    </View>
+                    <View style={styles.suggestionInfo}>
+                      <ThemedText style={styles.suggestionName} numberOfLines={1}>
+                        {item.name || 'Unknown'}
+                      </ThemedText>
+                      <ThemedText themeColor="textSecondary" style={styles.suggestionEmail} numberOfLines={1}>
+                        {item.email}
+                      </ThemedText>
+                    </View>
+                    <Ionicons name="add-circle-outline" size={22} color={theme.primary} />
+                  </Pressable>
+                )}
+              />
+            </View>
+          )}
         </View>
 
         <Pressable
@@ -286,5 +364,41 @@ const styles = StyleSheet.create({
   inviteButtonText: {
     fontSize: 16,
     fontWeight: '600',
+  },
+  searchSpinner: {
+    marginLeft: Spacing.two,
+  },
+  suggestionsList: {
+    borderRadius: BorderRadius,
+    borderWidth: 1,
+    overflow: 'hidden',
+  },
+  suggestionItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    padding: Spacing.two,
+    gap: Spacing.two,
+  },
+  suggestionAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  suggestionAvatarText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  suggestionInfo: {
+    flex: 1,
+  },
+  suggestionName: {
+    fontSize: 14,
+    fontWeight: '500',
+  },
+  suggestionEmail: {
+    fontSize: 12,
   },
 });

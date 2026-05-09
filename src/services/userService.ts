@@ -3,6 +3,38 @@ import { supabase } from './supabase';
 import type { User } from '@/types/group';
 import type { AuthUser } from '@/types/auth';
 
+export async function searchUsersByEmail(
+  query: string,
+  excludeIds: string[] = []
+): Promise<{ users: (User & { id: string })[]; error: string | null }> {
+  try {
+    if (!query || query.length < 2) {
+      return { users: [], error: null };
+    }
+
+    let supabaseQuery = supabase
+      .from('users')
+      .select('id, name, email, avatar')
+      .ilike('email', `${query}%`)
+      .limit(5);
+
+    if (excludeIds.length > 0) {
+      supabaseQuery = supabaseQuery.not('id', 'in', `(${excludeIds.join(',')})`);
+    }
+
+    const { data, error } = await supabaseQuery;
+
+    if (error) {
+      return { users: [], error: error.message };
+    }
+
+    return { users: (data || []) as (User & { id: string })[], error: null };
+  } catch (e: any) {
+    console.error('[userService] searchUsersByEmail failed:', e);
+    return { users: [], error: e.message || 'Failed to search users.' };
+  }
+}
+
 export async function checkUserByEmail(email: string): Promise<{ exists: boolean; user: User | null; error: string | null }> {
   try {
     const { data, error } = await supabase
