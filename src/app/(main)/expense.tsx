@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { StyleSheet, View, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
+import { StyleSheet, View, TextInput, Pressable, ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter, useLocalSearchParams, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -13,6 +13,7 @@ import { useGroupStore } from '@/store/groupStore';
 import { useCreateExpense } from '@/hooks/useExpenses';
 import { showToast, Toast } from '@/components/Toast';
 import { fetchUsersByIds } from '@/services/userService';
+import { DatePicker } from '@/components/ui/date-picker';
 import type { ExpenseSplit, ExpenseCategory, SplitType } from '@/types/expense';
 import { Spacing, BorderRadius } from '@/constants/theme';
 
@@ -37,6 +38,7 @@ export default function AddExpenseScreen() {
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
   const [category, setCategory] = useState<ExpenseCategory>('food');
+  const [expenseDate, setExpenseDate] = useState(new Date());
   const [splitType, setSplitType] = useState<SplitType>('equal');
   const [splits, setSplits] = useState<ExpenseSplit[]>([]);
   const [memberNames, setMemberNames] = useState<{ userId: string; name: string }[]>([]);
@@ -51,6 +53,7 @@ export default function AddExpenseScreen() {
       setAmount('');
       setNote('');
       setCategory('food');
+      setExpenseDate(new Date());
       setSplitType('equal');
       setSplits([]);
       return () => {
@@ -102,7 +105,7 @@ export default function AddExpenseScreen() {
         note,
         category,
         splitType,
-        date: new Date().toISOString().split('T')[0],
+        date: expenseDate.toISOString().split('T')[0],
         createdBy: user.id,
         createdAt: new Date().toISOString(),
         splits: finalSplits,
@@ -115,6 +118,7 @@ export default function AddExpenseScreen() {
         setAmount('');
         setNote('');
         setCategory('food');
+        setExpenseDate(new Date());
         setSplitType('equal');
         setSplits([]);
         // Redirect to group details page
@@ -167,6 +171,11 @@ export default function AddExpenseScreen() {
               placeholder="What's this expense for?"
               placeholderTextColor={theme.textSecondary}
             />
+          </View>
+
+          <View style={styles.section}>
+            <ThemedText type="small" style={styles.label}>DATE</ThemedText>
+            <DatePicker date={expenseDate} onDateChange={setExpenseDate} />
           </View>
 
           <View style={styles.section}>

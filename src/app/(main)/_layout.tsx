@@ -96,9 +96,7 @@ function CenteredTabBar({ state, descriptors, navigation }: any) {
                   focused: isFocused,
                   size: 24,
                 })}
-                {route.name === 'activity' && (
-                  <View style={[styles.notificationDot, { backgroundColor: colors.danger }]} />
-                )}
+
               </View>
               <Text
                 style={[
@@ -144,15 +142,6 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="expense"
-          options={{
-            title: 'Add',
-            tabBarIcon: ({ color }) => (
-              <Ionicons name="add-circle" size={24} color={color} />
-            ),
-          }}
-        />
-        <Tabs.Screen
           name="activity"
           options={{
             title: 'Activity',
@@ -171,9 +160,27 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="expense"
+          options={{
+            href: null,
+          }}
+        />
+        <Tabs.Screen
           name="create-group"
           options={{
             href: null,
+          }}
+        />
+        <Tabs.Screen
+          name="group/settle-up"
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tabs.Screen
+          name="expense/[id]/edit"
+          options={{
+            tabBarButton: () => null,
           }}
         />
         <Tabs.Screen
