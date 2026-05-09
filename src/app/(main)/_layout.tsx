@@ -38,6 +38,36 @@ const NavLightTheme = {
   }) as any,
 };
 
+const NavDarkTheme = {
+  dark: true,
+  colors: {
+    primary: '#818CF8',
+    background: '#0F172A',
+    card: '#1E293B',
+    text: '#F8FAFC',
+    border: '#334155',
+    notification: '#818CF8',
+  },
+  fonts: Platform.select({
+    default: { regular: { fontFamily: 'system-ui', fontWeight: '400' }, medium: { fontFamily: 'system-ui', fontWeight: '500' }, bold: { fontFamily: 'system-ui', fontWeight: '700' }, heavy: { fontFamily: 'system-ui', fontWeight: '900' } },
+  }) as any,
+};
+
+const NavLightTheme = {
+  dark: false,
+  colors: {
+    primary: '#4F46E5',
+    background: '#FFFFFF',
+    card: '#F1F5F9',
+    text: '#1E1B4B',
+    border: '#E2E8F0',
+    notification: '#4F46E5',
+  },
+  fonts: Platform.select({
+    default: { regular: { fontFamily: 'system-ui', fontWeight: '400' }, medium: { fontFamily: 'system-ui', fontWeight: '500' }, bold: { fontFamily: 'system-ui', fontWeight: '700' }, heavy: { fontFamily: 'system-ui', fontWeight: '900' } },
+  }) as any,
+};
+
 function CenteredTabBar({ state, descriptors, navigation }: any) {
   const { buildHref } = useLinkBuilder();
   const colorScheme = useColorScheme() ?? 'light';
