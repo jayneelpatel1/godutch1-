@@ -39,14 +39,19 @@ export default function GroupDetailsScreen() {
   const [userMap, setUserMap] = useState<Record<string, string>>({});
 
   useEffect(() => {
-    if (memberIds.length > 0) {
-      fetchUsersByIds(memberIds).then(({ users }) => {
+    const memberUserIds = group?.members?.map((m) => m.user_id) || [];
+    const settlementUserIds = settlements.flatMap((s) => [s.payerId, s.receiverId]);
+    const expensePayerIds = expenses.map((e) => e.paidBy);
+    const allIds = [...new Set([...memberUserIds, ...settlementUserIds, ...expensePayerIds])];
+
+    if (allIds.length > 0) {
+      fetchUsersByIds(allIds).then(({ users }) => {
         const map: Record<string, string> = {};
         users.forEach((u) => { map[u.id] = u.name; });
         setUserMap(map);
       });
     }
-  }, [group?.id]);
+  }, [group?.id, settlements.length, expenses.length]);
 
   const isLoading = expensesLoading || settlementsLoading;
 
@@ -197,7 +202,7 @@ export default function GroupDetailsScreen() {
                 </ThemedText>
                 {positiveBalances.map((b) => (
                   <View key={b.userId} style={styles.balanceRow}>
-                    <ThemedText type="subtitle">{userMap[b.userId] || 'Loading...'}</ThemedText>
+                    <ThemedText type="default">{userMap[b.userId] || 'Unknown'}</ThemedText>
                     <ThemedText type="subtitle" style={{ color: theme.success }}>₹{b.amount.toFixed(2)}</ThemedText>
                   </View>
                 ))}
@@ -210,7 +215,7 @@ export default function GroupDetailsScreen() {
                 </ThemedText>
                 {negativeBalances.map((b) => (
                   <View key={b.userId} style={styles.balanceRow}>
-                    <ThemedText type="subtitle">{userMap[b.userId] || 'Loading...'}</ThemedText>
+                    <ThemedText type="default">{userMap[b.userId] || 'Unknown'}</ThemedText>
                     <ThemedText type="subtitle" style={{ color: theme.danger }}>₹{Math.abs(b.amount).toFixed(2)}</ThemedText>
                   </View>
                 ))}
@@ -262,6 +267,11 @@ export default function GroupDetailsScreen() {
                       onPress={() => router.push(`/expense/${tx.id}`)}
                       onDelete={() => handleDeleteExpense(tx.id)}
                       groupId={id as string}
+                      paidByName={userMap[tx.data.paidBy] || 'Unknown'}
+                      splits={(tx.data.splits || []).map(s => ({
+                        ...s,
+                        name: userMap[s.userId] || 'Unknown'
+                      }))}
                     />
                   );
                 }
@@ -280,7 +290,7 @@ export default function GroupDetailsScreen() {
                         <Ionicons name="swap-horizontal" size={20} color={theme.primary} />
                       </View>
                       <View style={styles.settlementInfo}>
-                        <ThemedText type="subtitle" style={styles.settlementTitle}>
+                        <ThemedText type="default" style={styles.settlementTitle}>
                           {isPayer
                             ? `You paid ${userMap[settlement.receiverId] || 'Unknown'}`
                             : isReceiver

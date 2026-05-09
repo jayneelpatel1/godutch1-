@@ -37,16 +37,20 @@ export async function createActivity(input: ActivityInput): Promise<{ activity: 
   try {
     console.log('[activityService] Creating activity:', input);
 
+    const insertData: Record<string, unknown> = {
+      user_id: input.userId,
+      group_id: input.groupId,
+      type: input.type,
+      title: input.title,
+      description: input.description,
+    };
+    if (input.metadata) {
+      insertData.metadata = input.metadata;
+    }
+
     const { data, error } = await supabase
       .from('activities')
-      .insert({
-        user_id: input.userId,
-        group_id: input.groupId,
-        type: input.type,
-        title: input.title,
-        description: input.description,
-        metadata: input.metadata,
-      })
+      .insert(insertData)
       .select()
       .single();
 
