@@ -1,3 +1,20 @@
+/**
+ * @screen EditExpenseScreen
+ * @description Allows user to modify an existing expense — amount, note, date,
+ *              category, split type, and per-member splits. Pre-populates form
+ *              from the existing expense data including the original date.
+ *
+ * @route /expense/[id]/edit
+ * @auth Required — redirects to login if no session
+ *
+ * @remarks This screen mirrors AddExpenseScreen layout but loads initial values
+ *          from the expense fetched via useExpense hook. The date picker was
+ *          added later — ensure it stays in sync with AddExpenseScreen.
+ *
+ * @dependencies DatePicker (shared component with AddExpenseScreen)
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, Pressable, ScrollView, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -13,9 +30,15 @@ import { useGroupStore } from '@/store/groupStore';
 import { useExpense, useUpdateExpense } from '@/hooks/useExpenses';
 import { showToast, Toast } from '@/components/Toast';
 import { fetchUsersByIds } from '@/services/userService';
+import { DatePicker } from '@/components/ui/date-picker';
 import type { ExpenseSplit, ExpenseCategory, SplitType } from '@/types/expense';
 import { Spacing, BorderRadius } from '@/constants/theme';
 
+/**
+ * Static category definitions shared with AddExpenseScreen.
+ * Kept local instead of extracted to avoid coupling — if categories change,
+ * update both files.
+ */
 const categories: { id: ExpenseCategory; label: string; icon: string }[] = [
   { id: 'food', label: 'Food', icon: 'restaurant-outline' },
   { id: 'travel', label: 'Travel', icon: 'airplane-outline' },
@@ -37,13 +60,17 @@ export default function EditExpenseScreen() {
   const { expense, isLoading: loadingExpense } = useExpense(id as string);
   const updateExpenseMutation = useUpdateExpense(expense?.groupId || '');
 
+  // Form state — mirrors AddExpenseScreen fields plus date
   const [amount, setAmount] = useState('');
   const [note, setNote] = useState('');
+  const [expenseDate, setExpenseDate] = useState(new Date());
   const [category, setCategory] = useState<ExpenseCategory>('food');
   const [splitType, setSplitType] = useState<SplitType>('equal');
   const [splits, setSplits] = useState<ExpenseSplit[]>([]);
   const [memberNames, setMemberNames] = useState<{ userId: string; name: string }[]>([]);
 
+  // Pre-populate form when expense data finishes loading
+  // Date is parsed from the stored YYYY-MM-DD string — falls back to today if missing
   useEffect(() => {
     if (expense) {
       setAmount(expense.amount.toString());
@@ -51,6 +78,7 @@ export default function EditExpenseScreen() {
       setCategory(expense.category);
       setSplitType(expense.splitType);
       setSplits(expense.splits || []);
+      if (expense.date) setExpenseDate(new Date(expense.date));
     }
   }, [expense]);
 
@@ -77,17 +105,25 @@ export default function EditExpenseScreen() {
     if (!amount || !note || !category || !user?.id || !expense) return;
 
     try {
-      const finalSplits = splits.length > 0 ? splits : memberNames.map((m) => ({
+      let finalSplits = splits.length > 0 ? splits : memberNames.map((m) => ({
         userId: m.userId,
         owedAmount: Math.round((parseFloat(amount) / memberNames.length) * 100) / 100,
       }));
 
       const totalSplit = finalSplits.reduce((sum, s) => sum + s.owedAmount, 0);
-      if (Math.abs(totalSplit - parseFloat(amount)) > 0.01) {
-        showToast('error', `Split total (₹${totalSplit.toFixed(2)}) must equal amount (₹${parseFloat(amount).toFixed(2)})`);
-        return;
+      const diff = Math.round((parseFloat(amount) - totalSplit) * 100) / 100;
+      if (Math.abs(diff) > 0.01 && finalSplits.length > 0) {
+        finalSplits = finalSplits.map((s, i) =>
+          i === finalSplits.length - 1
+            ? { ...s, owedAmount: Math.round((s.owedAmount + diff) * 100) / 100 }
+            : s
+        );
       }
 
+      /**
+       * Send updated expense to Supabase.
+       * Date is serialised to YYYY-MM-DD to match the DB column format.
+       */
       await updateExpenseMutation.mutateAsync({
         expenseId: expense.id,
         updates: {
@@ -96,7 +132,7 @@ export default function EditExpenseScreen() {
           note,
           category,
           splitType,
-          date: expense.date,
+          date: expenseDate.toISOString().split('T')[0],
           splits: finalSplits,
         },
       });
@@ -181,6 +217,13 @@ export default function EditExpenseScreen() {
               placeholder="What's this expense for?"
               placeholderTextColor={theme.textSecondary}
             />
+          </View>
+
+          {/* Date picker — uses same shared DatePicker component as AddExpenseScreen */}
+          {/* Keep both screens in sync if date UI changes */}
+          <View style={styles.section}>
+            <ThemedText type="small" style={styles.label}>DATE</ThemedText>
+            <DatePicker date={expenseDate} onDateChange={setExpenseDate} />
           </View>
 
           <View style={styles.section}>

@@ -16,8 +16,10 @@ import Footer from '@/components/footer';
 export default function ActivityScreen() {
   const theme = useTheme();
   const { activities, isLoading, error, refetch } = useActivities();
+  console.log('[ActivityScreen] DEBUG: activities:', activities?.length, 'isLoading:', isLoading, 'error:', error);
 
   useFocusEffect(useCallback(() => {
+    console.log('[ActivityScreen] DEBUG: focus effect - deleting old activities and refetching');
     deleteOldActivities(7);
     refetch();
   }, [refetch]));

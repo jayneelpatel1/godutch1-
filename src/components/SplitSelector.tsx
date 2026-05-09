@@ -37,9 +37,14 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
       const selectedCount = selectedMembers.size;
       if (type === 'equal' && selectedCount > 0) {
         const perPerson = Math.round((amount / selectedCount) * 100) / 100;
-        onSplitsChange(members
-          .filter(m => selectedMembers.has(m.userId))
-          .map((m) => ({ userId: m.userId, owedAmount: perPerson })));
+        const selectedMembersList = members.filter(m => selectedMembers.has(m.userId));
+        const newSplits = selectedMembersList.map((m) => ({ userId: m.userId, owedAmount: perPerson }));
+        const total = newSplits.reduce((s, sp) => s + sp.owedAmount, 0);
+        const diff = Math.round((amount - total) * 100) / 100;
+        if (Math.abs(diff) > 0 && newSplits.length > 0) {
+          newSplits[newSplits.length - 1].owedAmount = Math.round((newSplits[newSplits.length - 1].owedAmount + diff) * 100) / 100;
+        }
+        onSplitsChange(newSplits);
       } else if (type === 'percentage') {
         const defaultPercent = Math.round((100 / members.length) * 100) / 100;
         const owedAmount = Math.round((amount * defaultPercent) / 100 * 100) / 100;
@@ -61,9 +66,14 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
       const selectedCount = selectedMembers.size;
       if (selectedCount > 0) {
         const perPerson = Math.round((amount / selectedCount) * 100) / 100;
-        onSplitsChange(members
-          .filter(m => selectedMembers.has(m.userId))
-          .map((m) => ({ userId: m.userId, owedAmount: perPerson })));
+        const selectedMembersList = members.filter(m => selectedMembers.has(m.userId));
+        const newSplits = selectedMembersList.map((m) => ({ userId: m.userId, owedAmount: perPerson }));
+        const total = newSplits.reduce((s, sp) => s + sp.owedAmount, 0);
+        const diff = Math.round((amount - total) * 100) / 100;
+        if (Math.abs(diff) > 0 && newSplits.length > 0) {
+          newSplits[newSplits.length - 1].owedAmount = Math.round((newSplits[newSplits.length - 1].owedAmount + diff) * 100) / 100;
+        }
+        onSplitsChange(newSplits);
       }
     } else if (newType === 'percentage') {
       const defaultPercent = Math.round((100 / members.length) * 100) / 100;
