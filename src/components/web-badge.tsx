@@ -1,3 +1,13 @@
+/**
+ * @component WebBadge
+ * @description Displays the Expo SDK version badge for web builds.
+ *              Shows a version number and Expo logo appropriate for the color scheme.
+ *
+ * @used-in Web-only layouts
+ *
+ * @platform Web only
+ */
+
 import { version } from 'expo/package.json';
 import { Image } from 'expo-image';
 import React from 'react';

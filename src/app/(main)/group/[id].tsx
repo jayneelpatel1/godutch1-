@@ -1,3 +1,21 @@
+/**
+ * @screen GroupDetailScreen
+ * @description Shows full group details: member list, balance card, per-member balances,
+ *              and a combined transaction list (expenses + settlements) sorted by date.
+ *              Supports renaming the group inline and deleting the group.
+ *
+ * @route /group/[id]
+ * @auth Required
+ *
+ * @dependencies useExpenses, useSettlements, useGroupStore, useUpdateGroup, useDeleteGroup
+ *
+ * @remarks
+ *   - Expenses and settlements are displayed in a single chronological list
+ *   - Monthly headers separate transactions by month
+ *   - Balance card shows color-coded per-member amounts
+ *   - Long press on group name opens rename modal
+ */
+
 import { useState, useEffect, useMemo, useCallback } from 'react';
 import { StyleSheet, View, ScrollView, Pressable, ActivityIndicator, Alert, Platform, TouchableOpacity, TextInput, Modal } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

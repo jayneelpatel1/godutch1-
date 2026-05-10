@@ -1,3 +1,15 @@
+/**
+ * @component ExternalLink
+ * @description Link component that opens URLs in an in-app browser on native
+ *              (via expo-web-browser) and in a new tab on web.
+ *
+ * @props
+ *   - href: string — The URL to open
+ *   - All Link props from expo-router
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import { Href, Link } from 'expo-router';
 import { openBrowserAsync, WebBrowserPresentationStyle } from 'expo-web-browser';
 import { type ComponentProps } from 'react';
@@ -12,9 +24,7 @@ export function ExternalLink({ href, ...rest }: Props) {
       href={href}
       onPress={async (event) => {
         if (process.env.EXPO_OS !== 'web') {
-          // Prevent the default behavior of linking to the default browser on native.
           event.preventDefault();
-          // Open the link in an in-app browser.
           await openBrowserAsync(href, {
             presentationStyle: WebBrowserPresentationStyle.AUTOMATIC,
           });

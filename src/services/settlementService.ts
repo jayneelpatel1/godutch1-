@@ -3,6 +3,17 @@ import { createActivityForGroupMembers, getUserName, getGroupName } from './acti
 
 import type { Settlement, SettlementInput } from '@/types/settlement';
 
+/**
+ * @function createSettlement
+ * @description Creates a completed settlement record transferring an amount
+ *              from payer to receiver within a group. Notifies all group members.
+ *
+ * @param input — SettlementInput with groupId, payerId, receiverId, amount
+ * @returns Object containing created settlement and error message
+ *
+ * @side-effects Inserts into `settlements` table
+ *              Creates activity records for all group members
+ */
 export async function createSettlement(
   input: SettlementInput
 ): Promise<{ settlement: Settlement | null; error: string | null }> {
@@ -33,7 +44,6 @@ export async function createSettlement(
       createdAt: data.created_at as string,
     };
 
-    // Notify group members about the settlement
     const [payerName, receiverName, groupName] = await Promise.all([
       getUserName(input.payerId),
       getUserName(input.receiverId),
@@ -47,11 +57,19 @@ export async function createSettlement(
 
     return { settlement, error: null };
   } catch (e: any) {
-    console.error('[settlementService] createSettlement exception:', e);
     return { settlement: null, error: e.message || 'Failed to create settlement.' };
   }
 }
 
+/**
+ * @function deleteSettlement
+ * @description Deletes a settlement by ID and notifies group members.
+ *
+ * @param settlementId — UUID of the settlement to delete
+ * @param groupId — Group UUID (required for activity notifications)
+ * @param userId — User UUID who deleted (required for activity notifications)
+ * @returns Object with error message (null on success)
+ */
 export async function deleteSettlement(
   settlementId: string,
   groupId?: string,
@@ -77,11 +95,17 @@ export async function deleteSettlement(
 
     return { error: error?.message || null };
   } catch (e: any) {
-    console.error('[settlementService] deleteSettlement exception:', e);
     return { error: e.message || 'Failed to delete settlement.' };
   }
 }
 
+/**
+ * @function fetchSettlements
+ * @description Retrieves all settlements for a group, ordered newest first.
+ *
+ * @param groupId — UUID of the group
+ * @returns Object containing array of settlements and error message
+ */
 export async function fetchSettlements(
   groupId: string
 ): Promise<{ settlements: Settlement[]; error: string | null }> {
@@ -108,7 +132,6 @@ export async function fetchSettlements(
 
     return { settlements, error: null };
   } catch (e: any) {
-    console.error('[settlementService] fetchSettlements exception:', e);
     return { settlements: [], error: e.message || 'Failed to fetch settlements.' };
   }
 }
@@ -118,6 +141,19 @@ export interface GroupBalanceSummary {
   netAmount: number;
 }
 
+/**
+ * @function fetchGroupBalances
+ * @description Computes the current user's net balance per group by considering
+ *              all expenses (what others owe user minus what user owes others)
+ *              and settlements (what user received minus what user paid).
+ *
+ *              Positive netAmount = user is owed money (others owe user)
+ *              Negative netAmount = user owes money
+ *
+ * @param userId — UUID of the current user
+ * @param groupIds — Array of group UUIDs to compute balances for
+ * @returns Object containing array of GroupBalanceSummary and error message
+ */
 export async function fetchGroupBalances(
   userId: string,
   groupIds: string[]
@@ -129,12 +165,7 @@ export async function fetchGroupBalances(
 
     const { data, error } = await supabase
       .from('expenses')
-      .select(`
-        id,
-        group_id,
-        paid_by,
-        expense_splits(user_id, owed_amount)
-      `)
+      .select('id, group_id, paid_by, expense_splits(user_id, owed_amount)')
       .in('group_id', groupIds);
 
     if (error) {
@@ -162,10 +193,7 @@ export async function fetchGroupBalances(
     for (const expense of expenseData) {
       const gid = expense.group_id as string;
       const paidBy = expense.paid_by as string;
-      const splits = (expense.expense_splits || []) as Array<{
-        user_id: string;
-        owed_amount: number;
-      }>;
+      const splits = (expense.expense_splits || []) as Array<{ user_id: string; owed_amount: number }>;
 
       if (paidBy === userId) {
         const othersOwed = splits
@@ -201,7 +229,6 @@ export async function fetchGroupBalances(
 
     return { balances, error: null };
   } catch (e: any) {
-    console.error('[settlementService] fetchGroupBalances exception:', e);
     return { balances: [], error: e.message || 'Failed to fetch group balances.' };
   }
 }

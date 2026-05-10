@@ -1,3 +1,19 @@
+/**
+ * @component ThemedText
+ * @description Typography component with built-in theme color support and
+ *              preset type variants (title, subtitle, default, small, link, code).
+ *              Automatically applies the current theme's text color unless overridden.
+ *
+ * @used-in Every screen and component
+ *
+ * @props
+ *   - type?: 'default' | 'title' | 'small' | 'smallBold' | 'subtitle' | 'link' | 'linkPrimary' | 'code'
+ *   - themeColor?: ThemeColor  — Override the color with a specific theme color key
+ *   - All TextProps from react-native
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import { Platform, StyleSheet, Text, type TextProps } from 'react-native';
 
 import { Fonts, ThemeColor } from '@/constants/theme';

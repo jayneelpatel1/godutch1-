@@ -5,6 +5,15 @@ import { useExpenseStore } from '@/store/expenseStore';
 import { createExpense, deleteExpense, fetchExpenseById, fetchExpenses, updateExpense } from '@/services/expenseService';
 import type { ExpenseInput } from '@/types/expense';
 
+/**
+ * @hook useExpenses
+ * @description Fetches all expenses for a given group via React Query.
+ *
+ * @param groupId — UUID of the group
+ * @returns { expenses: ExpenseWithSplits[], isLoading: boolean, error: string | null, refetch: () => void }
+ *
+ * @query-key ['expenses', groupId]
+ */
 export function useExpenses(groupId: string) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['expenses', groupId],
@@ -20,6 +29,15 @@ export function useExpenses(groupId: string) {
   };
 }
 
+/**
+ * @hook useExpense
+ * @description Fetches a single expense by ID with all splits.
+ *
+ * @param expenseId — UUID of the expense
+ * @returns { expense: ExpenseWithSplits | null, isLoading: boolean, error: string | null, refetch: () => void }
+ *
+ * @query-key ['expense', expenseId]
+ */
 export function useExpense(expenseId: string) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['expense', expenseId],
@@ -35,6 +53,16 @@ export function useExpense(expenseId: string) {
   };
 }
 
+/**
+ * @hook useCreateExpense
+ * @description Creates a new expense in a group, syncs to local store, and invalidates
+ *              related queries.
+ *
+ * @param groupId — UUID of the group the expense belongs to
+ * @returns { UseMutationResult } — mutate with ExpenseInput
+ *
+ * @invalidates ['expenses', groupId], ['activities', userId]
+ */
 export function useCreateExpense(groupId: string) {
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user);
@@ -43,10 +71,6 @@ export function useCreateExpense(groupId: string) {
   return useMutation({
     mutationFn: async (expenseInput: ExpenseInput) => {
       if (!userId) throw new Error('Not authenticated');
-
-      // Online-only mode: Skip local SQLite save
-      // Offline sync will be implemented in later phase
-
       const result = await createExpense(expenseInput);
       if (result.error) throw new Error(result.error);
       return result.expense;
@@ -64,6 +88,15 @@ export function useCreateExpense(groupId: string) {
   });
 }
 
+/**
+ * @hook useUpdateExpense
+ * @description Updates an existing expense and its splits, then invalidates queries.
+ *
+ * @param groupId — UUID of the group for query invalidation
+ * @returns { UseMutationResult } — mutate with { expenseId, updates }
+ *
+ * @invalidates ['expenses', groupId], ['activities', userId]
+ */
 export function useUpdateExpense(groupId: string) {
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);
@@ -81,6 +114,15 @@ export function useUpdateExpense(groupId: string) {
   });
 }
 
+/**
+ * @hook useDeleteExpense
+ * @description Deletes an expense and invalidates related queries.
+ *
+ * @param groupId — UUID of the group for query invalidation
+ * @returns { UseMutationResult } — mutate with expenseId (string)
+ *
+ * @invalidates ['expenses', groupId], ['activities', userId]
+ */
 export function useDeleteExpense(groupId: string) {
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);

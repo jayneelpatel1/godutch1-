@@ -3,6 +3,15 @@ import { supabase } from './supabase';
 import type { User } from '@/types/group';
 import type { AuthUser } from '@/types/auth';
 
+/**
+ * @function searchUsersByEmail
+ * @description Searches for users whose email starts with the given query string.
+ *              Used for the "add member" autocomplete feature. Excludes specified IDs.
+ *
+ * @param query — Partial email string to search (minimum 2 chars)
+ * @param excludeIds — Array of user IDs to exclude from results
+ * @returns Object containing matching users (max 5) and error message
+ */
 export async function searchUsersByEmail(
   query: string,
   excludeIds: string[] = []
@@ -30,11 +39,18 @@ export async function searchUsersByEmail(
 
     return { users: (data || []) as (User & { id: string })[], error: null };
   } catch (e: any) {
-    console.error('[userService] searchUsersByEmail failed:', e);
     return { users: [], error: e.message || 'Failed to search users.' };
   }
 }
 
+/**
+ * @function checkUserByEmail
+ * @description Checks if a user with the given email exists in Supabase.
+ *              Used to determine whether to show "Invite" or "Add" for a member.
+ *
+ * @param email — The email to look up
+ * @returns Object with exists flag, user data (if found), and error message
+ */
 export async function checkUserByEmail(email: string): Promise<{ exists: boolean; user: User | null; error: string | null }> {
   try {
     const { data, error } = await supabase
@@ -53,11 +69,17 @@ export async function checkUserByEmail(email: string): Promise<{ exists: boolean
 
     return { exists: true, user: data as User, error: null };
   } catch (e) {
-    console.error('[userService] checkUserByEmail failed:', e);
     return { exists: false, user: null, error: 'Failed to check user.' };
   }
 }
 
+/**
+ * @function fetchUsersByIds
+ * @description Bulk-fetches user profiles by an array of user UUIDs.
+ *
+ * @param userIds — Array of user UUIDs to fetch
+ * @returns Object containing matching users and error message
+ */
 export async function fetchUsersByIds(userIds: string[]): Promise<{ users: (User & { id: string })[]; error: string | null }> {
   try {
     if (!userIds || userIds.length === 0) {
@@ -75,11 +97,17 @@ export async function fetchUsersByIds(userIds: string[]): Promise<{ users: (User
 
     return { users: (data || []) as (User & { id: string })[], error: null };
   } catch (e: any) {
-    console.error('[userService] fetchUsersByIds failed:', e);
     return { users: [], error: e.message || 'Failed to fetch users.' };
   }
 }
 
+/**
+ * @function getUserById
+ * @description Fetches a single user's profile by UUID.
+ *
+ * @param userId — UUID of the user to fetch
+ * @returns Object containing user (or null) and error message
+ */
 export async function getUserById(userId: string): Promise<{ user: (User & { id: string }) | null; error: string | null }> {
   try {
     const { data, error } = await supabase
@@ -94,15 +122,20 @@ export async function getUserById(userId: string): Promise<{ user: (User & { id:
 
     return { user: data as (User & { id: string }) | null, error: null };
   } catch (e: any) {
-    console.error('[userService] getUserById failed:', e);
     return { user: null, error: e.message || 'Failed to fetch user.' };
   }
 }
 
+/**
+ * @function updateUser
+ * @description Updates a user's name and/or avatar in Supabase.
+ *
+ * @param userId — UUID of the user to update
+ * @param updates — Object with optional name and/or avatar fields
+ * @returns Object indicating success/failure and error message
+ */
 export async function updateUser(userId: string, updates: { name?: string; avatar?: string }): Promise<{ success: boolean; error: string | null }> {
   try {
-    console.log('[userService] Updating user:', userId, updates);
-
     const { data, error } = await supabase
       .from('users')
       .update(updates)
@@ -111,41 +144,43 @@ export async function updateUser(userId: string, updates: { name?: string; avata
       .single();
 
     if (error) {
-      console.error('[userService] updateUser Supabase error:', error);
       return { success: false, error: error.message };
     }
 
-    console.log('[userService] User updated successfully:', data);
     return { success: true, error: null };
   } catch (e: any) {
-    console.error('[userService] updateUser failed:', e);
     return { success: false, error: e.message || 'Failed to update user.' };
   }
 }
 
+/**
+ * @function createOrUpdateUser
+ * @description Upserts a user record in Supabase using Firebase UID as the primary key.
+ *              Preserves the existing user's name if they already exist (never overwrites
+ *              with Google name). For new users, uses Google display name, email prefix,
+ *              or 'User' as fallback.
+ *
+ * @param authUser — AuthUser object from Firebase (id, email, name, avatar)
+ * @returns Object indicating success/failure and error message
+ *
+ * @remarks Email unique constraint has been removed from the DB to support Firebase Auth
+ */
 export async function createOrUpdateUser(authUser: AuthUser): Promise<{ success: boolean; error: string | null }> {
   try {
-    console.log('[userService] Creating/updating user:', authUser);
-    
-    // First, check if user already exists in Supabase to preserve name
     const { data: existingUser } = await supabase
       .from('users')
       .select('name')
       .eq('id', authUser.id)
       .maybeSingle();
-    
+
     let finalName: string;
 
     if (existingUser?.name) {
-      // User exists — preserve their existing name (never overwrite with Google name)
       finalName = existingUser.name;
     } else {
-      // New user — use Google name, fallback to email prefix, then 'User'
       finalName = authUser.name || authUser.email?.split('@')[0] || 'User';
     }
-    
-    // Upsert user by ID (Firebase UID is the primary key)
-    // Note: Email unique constraint has been removed to support Firebase Auth
+
     const { data, error } = await supabase
       .from('users')
       .upsert(
@@ -163,14 +198,11 @@ export async function createOrUpdateUser(authUser: AuthUser): Promise<{ success:
       .single();
 
     if (error) {
-      console.error('[userService] createOrUpdateUser Supabase error:', error);
       return { success: false, error: error.message };
     }
 
-    console.log('[userService] User created/updated successfully:', data);
     return { success: true, error: null };
   } catch (e: any) {
-    console.error('[userService] createOrUpdateUser failed:', e);
     return { success: false, error: e.message || 'Failed to save user.' };
   }
 }

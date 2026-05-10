@@ -4,21 +4,23 @@ import { useAuthStore } from '@/store/authStore';
 import { fetchActivities } from '@/services/activityService';
 import type { Activity } from '@/types/activity';
 
+/**
+ * @hook useActivities
+ * @description Fetches all activity feed entries for the current user.
+ *
+ * @returns { activities: Activity[], isLoading: boolean, error: string | null, refetch: () => void }
+ *
+ * @dependencies useAuthStore (reads current user ID)
+ * @query-key ['activities', userId]
+ */
 export function useActivities() {
   const userId = useAuthStore((state) => state.user?.id);
-  console.log('[useActivities] DEBUG: userId:', userId);
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['activities', userId],
-    queryFn: () => {
-      console.log('[useActivities] DEBUG: queryFn running for userId:', userId);
-      return fetchActivities(userId!);
-    },
+    queryFn: () => fetchActivities(userId!),
     enabled: !!userId,
   });
-
-  console.log('[useActivities] DEBUG: data:', data);
-  console.log('[useActivities] DEBUG: isLoading:', isLoading, 'error:', error);
 
   const activities: Activity[] = data?.activities ?? [];
 

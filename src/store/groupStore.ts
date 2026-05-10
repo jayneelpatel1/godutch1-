@@ -1,3 +1,23 @@
+/**
+ * @store groupStore
+ * @description Global group state managed by Zustand.
+ *              Mirrors Supabase data for optimistic updates.
+ *              React Query is the primary data source; store provides instant UI feedback.
+ *
+ * @state
+ *   - groups: GroupWithMembers[]   — User's groups with member lists
+ *   - isLoading: boolean
+ *   - error: string | null
+ *
+ * @actions
+ *   - setGroups(groups)                      — Replace all groups
+ *   - addGroup(group)                        — Append new group
+ *   - updateGroup(id, updates)               — Update in-place
+ *   - removeGroup(id)                        — Remove by ID
+ *   - addMemberToGroup(groupId, userId)      — Optimistically add member
+ *   - setLoading(bool) / setError(msg) / clearGroups()
+ */
+
 import { create } from 'zustand';
 
 import type { Group, GroupState, GroupWithMembers } from '@/types/group';

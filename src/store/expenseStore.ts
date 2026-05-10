@@ -1,3 +1,21 @@
+/**
+ * @store expenseStore
+ * @description Global expense state managed by Zustand.
+ *              Used for optimistic updates — the canonical data source is Supabase via React Query.
+ *
+ * @state
+ *   - expenses: Expense[]    — List of expenses (may be partial cache)
+ *   - isLoading: boolean     — Fetch in progress
+ *   - error: string | null   — Error message if fetch failed
+ *
+ * @actions
+ *   - setExpenses(expenses)        — Replace all expenses
+ *   - addExpense(expense)          — Prepend to list
+ *   - updateExpense(id, updates)   — Update in-place
+ *   - removeExpense(id)            — Remove by ID
+ *   - setLoading(bool) / setError(msg) / clearExpenses()
+ */
+
 import { create } from 'zustand';
 
 import type { Expense, ExpenseState } from '@/types/expense';

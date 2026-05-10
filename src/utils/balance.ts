@@ -1,3 +1,15 @@
+/**
+ * @file Balance computation engine.
+ * @description Calculates per-member balances and net balances from expenses and settlements.
+ *
+ * @remarks
+ *   Positive amount for a member = that member owes the current user.
+ *   Negative amount for a member = current user owes that member.
+ *
+ *   The algo iterates over every expense and settlement, which is O(n*m) where
+ *   n = number of expenses and m = number of members. Acceptable for typical group sizes.
+ */
+
 import type { ExpenseWithSplits } from '@/types/expense';
 import type { Settlement } from '@/types/settlement';
 
@@ -6,6 +18,18 @@ export interface MemberBalance {
   amount: number;
 }
 
+/**
+ * @function computeBalances
+ * @description Computes each member's net balance relative to the current user.
+ *              Iterates over expenses (what others owe user minus what user owes others)
+ *              and settlements (what user received minus what user paid).
+ *
+ * @param expenses — Array of expenses with splits
+ * @param memberIds — All member IDs in the group (excluding current user)
+ * @param currentUserId — The reference user
+ * @param settlements — Optional array of settlements to factor in
+ * @returns Array of per-member balance amounts
+ */
 export function computeBalances(
   expenses: ExpenseWithSplits[],
   memberIds: string[],
@@ -54,6 +78,16 @@ export function computeBalances(
   return balances;
 }
 
+/**
+ * @function computeNetBalance
+ * @description Calculates the current user's overall net balance across all expenses
+ *              and settlements. Positive = user is owed money, negative = user owes.
+ *
+ * @param expenses — Array of expenses with splits
+ * @param currentUserId — The reference user
+ * @param settlements — Optional array of settlements to factor in
+ * @returns Net balance amount
+ */
 export function computeNetBalance(
   expenses: ExpenseWithSplits[],
   currentUserId: string,

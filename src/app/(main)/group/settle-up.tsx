@@ -1,3 +1,21 @@
+/**
+ * @screen SettleUpScreen
+ * @description Shows balances per member (who owes you / you owe them).
+ *              User can initiate a settlement by clicking on a balance row,
+ *              entering an amount, and confirming payment.
+ *              Past settlements are shown below with delete capability.
+ *
+ * @route /group/[id]/settle-up
+ * @auth Required
+ *
+ * @dependencies useExpenses, useSettlements, useCreateSettlement, useDeleteSettlement
+ *
+ * @remarks
+ *   - "All settled up" empty state shown when no active balances
+ *   - Settlement amounts default to the owed amount but can be overridden
+ *   - Past settlements can be deleted to undo mistakes
+ */
+
 import { useState, useEffect, useMemo } from 'react';
 import {
   StyleSheet,

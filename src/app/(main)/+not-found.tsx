@@ -1,3 +1,11 @@
+/**
+ * @screen NotFoundScreen
+ * @description Fallback screen shown when a route doesn't match any registered screen.
+ *              Provides a link back to the home screen.
+ *
+ * @route unmatched routes
+ */
+
 import { Link, Stack } from 'expo-router';
 import { StyleSheet } from 'react-native';
 

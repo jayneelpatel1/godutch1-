@@ -1,3 +1,15 @@
+/**
+ * @screen ActivityScreen
+ * @description Activity feed showing all group-related events (expenses added,
+ *              settlements made, members joined, etc.). Activities are grouped by
+ *              month and sorted newest first.
+ *
+ * @route /activity (main tab)
+ * @auth Required
+ *
+ * @dependencies useActivities, ActivityItem
+ */
+
 import { useMemo } from 'react';
 import { StyleSheet, View, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

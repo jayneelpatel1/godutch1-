@@ -1,3 +1,9 @@
+/**
+ * @file Group type definitions.
+ * @description Types for groups, group members, and the combined GroupWithMembers type
+ *              returned by most queries. Also defines the User interface for profiles.
+ */
+
 export interface Group {
   id: string;
   name: string;

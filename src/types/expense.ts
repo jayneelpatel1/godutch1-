@@ -1,3 +1,9 @@
+/**
+ * @file Expense type definitions.
+ * @description Core types for the expense module — split types, categories,
+ *              expense records with splits, input shapes, and Zustand state.
+ */
+
 export type SplitType = 'equal' | 'exact' | 'percentage' | 'ratio';
 
 export type ExpenseCategory = 'food' | 'rent' | 'petrol' | 'travel' | 'shopping' | 'utilities' | 'entertainment' | 'other';

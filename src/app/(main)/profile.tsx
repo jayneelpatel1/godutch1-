@@ -1,3 +1,15 @@
+/**
+ * @screen ProfileScreen
+ * @description User profile screen. Shows avatar, name (editable), and email.
+ *              Supports sign-out with platform-specific confirmation dialog.
+ *              Name changes are saved to Supabase via updateUser service.
+ *
+ * @route /profile (main tab)
+ * @auth Required
+ *
+ * @dependencies useAuthStore, updateUser
+ */
+
 import { useState, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, Pressable, TextInput, Alert, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

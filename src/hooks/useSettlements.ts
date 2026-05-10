@@ -4,6 +4,15 @@ import { useAuthStore } from '@/store/authStore';
 import { createSettlement, deleteSettlement, fetchSettlements, fetchGroupBalances } from '@/services/settlementService';
 import type { SettlementInput } from '@/types/settlement';
 
+/**
+ * @hook useSettlements
+ * @description Fetches all settlements for a given group via React Query.
+ *
+ * @param groupId — UUID of the group
+ * @returns { settlements: Settlement[], isLoading: boolean, error: string | null, refetch: () => void }
+ *
+ * @query-key ['settlements', groupId]
+ */
 export function useSettlements(groupId: string) {
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['settlements', groupId],
@@ -19,6 +28,15 @@ export function useSettlements(groupId: string) {
   };
 }
 
+/**
+ * @hook useCreateSettlement
+ * @description Creates a settlement (payer → receiver) within a group.
+ *
+ * @param groupId — UUID of the group
+ * @returns { UseMutationResult } — mutate with SettlementInput
+ *
+ * @invalidates ['settlements', groupId], ['expenses', groupId], ['activities', userId], ['groupBalances', userId]
+ */
 export function useCreateSettlement(groupId: string) {
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);
@@ -41,6 +59,15 @@ export function useCreateSettlement(groupId: string) {
   });
 }
 
+/**
+ * @hook useDeleteSettlement
+ * @description Deletes a settlement by ID.
+ *
+ * @param groupId — UUID of the group for query invalidation
+ * @returns { UseMutationResult } — mutate with settlementId (string)
+ *
+ * @invalidates ['settlements', groupId], ['expenses', groupId], ['activities', userId], ['groupBalances', userId]
+ */
 export function useDeleteSettlement(groupId: string) {
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);
@@ -65,27 +92,15 @@ export function useDeleteSettlement(groupId: string) {
   });
 }
 
-export function useGroupBalances() {
-  const userId = useAuthStore((state) => state.user?.id);
-  const groups = useAuthStore((state) => state.user); // We need group IDs, we'll get them from params
-
-  const { data, isLoading, error, refetch } = useQuery({
-    queryKey: ['groupBalances', userId],
-    queryFn: async () => {
-      if (!userId) return { balances: [] };
-      return { balances: [] };
-    },
-    enabled: false,
-  });
-
-  return {
-    balances: data?.balances ?? [],
-    isLoading,
-    error: error?.message ?? null,
-    refetch,
-  };
-}
-
+/**
+ * @hook useFetchGroupBalances
+ * @description Mutation-based hook to compute the current user's net balance
+ *              across multiple groups. Stores result in query cache for reuse.
+ *
+ * @returns { UseMutationResult } — mutate with groupIds (string[])
+ *
+ * @side-effects Sets query data for ['groupBalances', userId] on success
+ */
 export function useFetchGroupBalances() {
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);

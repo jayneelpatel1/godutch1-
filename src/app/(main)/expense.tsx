@@ -1,3 +1,20 @@
+/**
+ * @screen AddExpenseScreen
+ * @description Creates a new expense in a group. User enters amount, note, date,
+ *              category, and selects a split type (equal/exact/percentage/ratio).
+ *              Handles rounding correction so split totals match the amount exactly.
+ *
+ * @route /expense (modal)
+ * @auth Required
+ *
+ * @dependencies SplitSelector, DatePicker, useCreateExpense
+ *
+ * @remarks
+ *   - Form clears when screen is focused via useFocusEffect
+ *   - Member names are fetched from Supabase via fetchUsersByIds
+ *   - Rounding fix: last split's amount is adjusted to match total
+ */
+
 import React, { useState, useEffect } from 'react';
 import { StyleSheet, View, TextInput, Pressable, ScrollView, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -53,19 +70,15 @@ export default function AddExpenseScreen() {
   };
   const createExpenseMutation = useCreateExpense(groupId);
 
-  // Clear form when screen is focused (navigated to)
   useFocusEffect(
     React.useCallback(() => {
-      // Clear form values when entering the screen
       setAmount('');
       setNote('');
       setCategory('food');
       setExpenseDate(new Date());
       setSplitType('equal');
       setSplits([]);
-      return () => {
-        // Cleanup when leaving
-      };
+      return () => {};
     }, [])
   );
 
@@ -74,10 +87,9 @@ export default function AddExpenseScreen() {
     ? group.members.map((m) => m.user_id)
     : ['current-user', 'user2', 'user3'];
 
-  // Fetch user names for members
   React.useEffect(() => {
     if (!group?.members || group.members.length === 0) return;
-    
+
     const userIds = group.members.map((m) => m.user_id);
     fetchUsersByIds(userIds).then((result) => {
       if (result.users) {
@@ -125,14 +137,12 @@ export default function AddExpenseScreen() {
       const expense = await createExpenseMutation.mutateAsync(expenseInput);
 
       if (expense) {
-        // Clear form values
         setAmount('');
         setNote('');
         setCategory('food');
         setExpenseDate(new Date());
         setSplitType('equal');
         setSplits([]);
-        // Redirect to group details page
         router.replace(`/group/${groupId}`);
       }
     } catch (error) {
@@ -323,12 +333,8 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     marginBottom: Spacing.one,
   },
-  categoryIconWrapSelected: {},
   categoryLabel: {
     fontSize: 12,
-  },
-  categoryLabelSelected: {
-    fontWeight: '600',
   },
   button: {
     borderRadius: BorderRadius,
@@ -337,7 +343,6 @@ const styles = StyleSheet.create({
     marginTop: Spacing.four,
     marginBottom: Spacing.five,
   },
-  buttonPressed: { opacity: 0.8 },
   buttonDisabled: { opacity: 0.5 },
   buttonText: {
     fontSize: 16,

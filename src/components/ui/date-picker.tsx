@@ -1,3 +1,21 @@
+/**
+ * @component DatePicker
+ * @description Custom modal date picker with month navigation.
+ *              Shows current date as a button, opens a calendar modal on press.
+ *              Highlights selected date and today's date.
+ *
+ * @used-in AddExpenseScreen, EditExpenseScreen
+ *
+ * @props
+ *   - date: Date              — Currently selected date
+ *   - onDateChange: (Date) => void — Called when user selects a new date
+ *
+ * @remarks The "Today" button scrolls the calendar to the current month
+ *          without selecting a date. User must tap a day to select.
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import { useState } from 'react';
 import { StyleSheet, View, Pressable, Modal } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';

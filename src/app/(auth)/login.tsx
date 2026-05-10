@@ -1,4 +1,17 @@
-import { useState, useEffect } from 'react';
+/**
+ * @screen LoginScreen
+ * @description Authentication screen with Google sign-in.
+ *              Uses Firebase Auth with popup on web and redirect on native.
+ *
+ * @route /login
+ * @auth None — this is the entry point for unauthenticated users
+ *
+ * @remarks
+ *   - handleGoogleSignInWeb uses signInWithPopup (web only)
+ *   - Native uses Google Sign-In flow via expo-auth-session
+ */
+
+import { useState } from 'react';
 import { StyleSheet, View, Pressable, ActivityIndicator, Platform } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -11,36 +24,11 @@ import { useAuthStore } from '@/store/authStore';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import { useTheme } from '@/hooks/use-theme';
 
-const WEB_CLIENT_ID = process.env.EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID || '';
-const IOS_CLIENT_ID = process.env.EXPO_PUBLIC_FIREBASE_IOS_CLIENT_ID || '';
-
 export default function LoginScreen() {
   const theme = useTheme();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const setUser = useAuthStore((state) => state.setUser);
-
-  const handleFirebaseAuth = async (idToken: string) => {
-    try {
-      const credential = GoogleAuthProvider.credential(idToken);
-      const firebaseUserCredential = await signInWithCredential(firebaseAuth, credential);
-      const firebaseUser = firebaseUserCredential.user;
-
-      const authUser = {
-        id: firebaseUser.uid,
-        email: firebaseUser.email || '',
-        name: firebaseUser.displayName || '',
-        avatar: firebaseUser.photoURL || undefined,
-      };
-
-      setUser(authUser);
-
-      setIsLoading(false);
-    } catch (err: any) {
-      setError(err.message || 'Failed to sign in');
-      setIsLoading(false);
-    }
-  };
 
   const handleGoogleSignInWeb = async () => {
     setIsLoading(true);

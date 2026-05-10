@@ -1,3 +1,20 @@
+/**
+ * @screen CreateGroupScreen
+ * @description Creates a new expense-sharing group. User enters a group name,
+ *              searches for members by email (with debounced autocomplete),
+ *              and can invite non-registered users via email link.
+ *
+ * @route /create-group
+ * @auth Required
+ *
+ * @dependencies useCreateGroup, searchUsersByEmail, checkUserByEmail, useUpsertUser
+ *
+ * @remarks
+ *   - Debounced email search fires after 300ms of no typing
+ *   - Shows "Invite" button for email addresses not yet registered in the app
+ *   - Non-registered users are upserted into the users table before adding to group
+ */
+
 import { useState, useEffect, useRef } from 'react';
 import { StyleSheet, View, ScrollView, TextInput, Linking, TouchableOpacity, FlatList, Pressable, ActivityIndicator } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

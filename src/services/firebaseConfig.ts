@@ -1,3 +1,14 @@
+/**
+ * @file Firebase initialization module.
+ * @description Initializes the Firebase app and Auth instance using environment variables.
+ *              All EXPO_PUBLIC_FIREBASE_* vars must be set in .env or build config.
+ *
+ * @exports firebaseApp — The initialized Firebase application instance
+ * @exports firebaseAuth — The Auth instance used for Google sign-in
+ *
+ * @see https://firebase.google.com/docs/web/setup
+ */
+
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
 

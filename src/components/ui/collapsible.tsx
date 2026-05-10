@@ -1,3 +1,17 @@
+/**
+ * @component Collapsible
+ * @description Animated collapsible section with a chevron indicator.
+ *              Content fades in when expanded using react-native-reanimated.
+ *
+ * @used-in Development/debug screens
+ *
+ * @props
+ *   - title: string        — Section header text
+ *   - children: ReactNode  — Content revealed when expanded
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import { SymbolView } from 'expo-symbols';
 import { PropsWithChildren, useState } from 'react';
 import { Pressable, StyleSheet } from 'react-native';
