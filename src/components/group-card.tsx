@@ -102,7 +102,7 @@ export default function GroupCard({ group, onPress, onDelete, balanceAmount }: G
       <View style={styles.info}>
         <ThemedText type="subtitle" style={styles.groupName}>{group.name}</ThemedText>
         <ThemedText type="small" themeColor="textSecondary">
-          {group.memberCount || 0} members · 0 expenses
+          {group.memberCount || 0} members
         </ThemedText>
       </View>
     </Pressable>

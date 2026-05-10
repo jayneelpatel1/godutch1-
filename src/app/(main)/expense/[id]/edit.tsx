@@ -52,13 +52,17 @@ const categories: { id: ExpenseCategory; label: string; icon: string }[] = [
 
 export default function EditExpenseScreen() {
   const router = useRouter();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, groupId: paramGroupId } = useLocalSearchParams<{ id: string; groupId?: string }>();
   const { user } = useAuthStore();
   const { groups } = useGroupStore();
   const theme = useTheme();
 
   const { expense, isLoading: loadingExpense } = useExpense(id as string);
   const updateExpenseMutation = useUpdateExpense(expense?.groupId || '');
+
+  const handleBack = () => {
+    router.push(`/expense/${id}`);
+  };
 
   // Form state — mirrors AddExpenseScreen fields plus date
   const [amount, setAmount] = useState('');
@@ -138,7 +142,7 @@ export default function EditExpenseScreen() {
       });
 
       showToast('success', 'Expense updated successfully');
-      router.back();
+      handleBack();
     } catch (error) {
       const message = error instanceof Error ? error.message : 'Failed to update expense';
       console.error('[edit-expense] handleUpdateExpense error:', error);
@@ -153,7 +157,7 @@ export default function EditExpenseScreen() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Pressable onPress={handleBack} style={styles.backButton}>
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </Pressable>
             <ThemedText type="title">Edit Expense</ThemedText>
@@ -170,7 +174,7 @@ export default function EditExpenseScreen() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Pressable onPress={handleBack} style={styles.backButton}>
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </Pressable>
             <ThemedText type="title">Expense Not Found</ThemedText>
@@ -186,7 +190,7 @@ export default function EditExpenseScreen() {
         <Toast />
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Pressable onPress={handleBack} style={styles.backButton}>
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </Pressable>
             <ThemedText type="title">Edit Expense</ThemedText>
@@ -200,7 +204,7 @@ export default function EditExpenseScreen() {
               <TextInput
                 style={[styles.amountInput, { color: theme.text }]}
                 value={amount}
-                onChangeText={setAmount}
+                onChangeText={(text) => setAmount(text.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'))}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor={theme.textSecondary}

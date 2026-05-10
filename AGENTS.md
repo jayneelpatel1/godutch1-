@@ -787,6 +787,122 @@ git checkout -b feature/x       ← branching from another feature branch
 
 ---
 
+## ⚔️ Conflict Resolution (When PR Shows Merge Conflicts)
+
+### 🧠 Why conflicts happen — understand this first
+
+Your local branch is NOT the problem. Conflicts appear on GitHub because:
+
+```
+staging ──── A ──── B ──── C   ← brother's PR merged (staging moved forward)
+                    ↑
+your branch ── X ── Y          ← your PR, still based on old staging
+```
+
+Your local branch `X → Y` is perfectly clean. But staging has moved forward (commit C was added after you branched). GitHub sees the divergence and flags your PR as a conflict — even though nothing is wrong locally.
+
+**The fix: rebase your branch onto the updated staging so your commits sit on top of C, not B.**
+
+```
+staging ──── A ──── B ──── C
+                            ↑
+your branch (after rebase) ── X' ── Y'   ← clean, no conflict
+```
+
+**NEVER resolve conflicts by clicking "Merge staging into branch" on GitHub — always rebase.**
+
+### Why rebase, not merge?
+- Merge creates an extra "merge commit" that pollutes the history
+- Rebase replays your commits on top of the latest staging cleanly
+- PR stays linear and easy to review
+
+### When to do this
+
+Run the rebase **as soon as you see the conflict warning on GitHub** — before asking your brother to review. Don't open a review request on a conflicted PR.
+
+A good habit: before requesting review on any PR, always run `git fetch origin` first to check if staging has moved.
+
+### Steps (run in this order):
+
+```bash
+# Step 1 — Fetch latest staging (don't pull, just fetch)
+git fetch origin
+
+# Step 2 — Rebase your branch onto staging
+git rebase origin/staging
+```
+
+Git will pause at each commit that conflicts. For each conflict:
+
+```bash
+# Step 3 — Open each conflicted file in your editor
+# Look for conflict markers and resolve them:
+#
+# <<<<<<< HEAD (your changes)
+# your code
+# =======
+# their code
+# >>>>>>> origin/staging (staging's changes)
+#
+# Delete the markers, keep the correct code (yours, theirs, or a blend)
+
+# Step 4 — Stage the resolved files
+git add .
+
+# Step 5 — Continue the rebase (repeat steps 3–5 for each conflicting commit)
+git rebase --continue
+```
+
+Once rebase is complete:
+
+```bash
+# Step 6 — Force push with lease (the ONE allowed force push)
+git push origin feature/your-branch-name --force-with-lease
+```
+
+The PR on GitHub will automatically update and the conflict warning will be gone.
+
+### ✅ Rules during rebase
+
+* ✅ Use `git add .` + `git rebase --continue` to proceed
+* ✅ Use `--force-with-lease` for the push after rebase — it is safe
+* ❌ NEVER use `git merge origin/staging` — use rebase only
+* ❌ NEVER use plain `git push --force` — always `--force-with-lease`
+* ❌ NEVER commit during a rebase — only `git add` + `git rebase --continue`
+
+### 🆘 If rebase goes wrong — abort and start over
+
+```bash
+git rebase --abort
+# You are back to where you started — try again carefully
+```
+
+### ⚠️ Why `--force-with-lease` and not `--force`?
+
+| Command | What it does |
+|---------|-------------|
+| `--force` | Overwrites remote branch blindly — can erase someone else's push |
+| `--force-with-lease` | Fails safely if the remote was updated since your last fetch — protects against overwriting |
+
+Always use `--force-with-lease`. Plain `--force` is banned.
+
+### Conflict checklist
+
+```
+[ ] Understood the cause — staging moved forward, local branch is fine
+[ ] git fetch origin ran before rebase
+[ ] git rebase origin/staging used (NOT git merge)
+[ ] All conflict markers (<<<<<<< ======= >>>>>>>) removed from files
+[ ] git add . run after resolving each file
+[ ] git rebase --continue run after staging
+[ ] App tested after rebase (conflicts can introduce subtle bugs)
+[ ] git push --force-with-lease used (NOT --force)
+[ ] PR updated on GitHub — conflict warning gone
+[ ] Brother notified to re-review
+```
+
+---
+
 ## 👁️ Review Rules (2-Person Team)
 
 * You write code → **brother reviews and merges**
@@ -794,6 +910,7 @@ git checkout -b feature/x       ← branching from another feature branch
 * ❌ Never merge your own PR (except true emergencies)
 * ✅ Always check the Firebase preview URL before approving
 * ✅ Leave a comment on GitHub if something looks wrong
+* ✅ After a rebase force-push, re-review the PR from scratch — the commit history changed
 
 ---
 
@@ -930,6 +1047,26 @@ Firebase will deploy to live automatically once the PR is merged. ✅
 🚀 No manual deployment needed — GitHub Actions handles it automatically.
 ```
 
+**When PR shows a merge conflict:**
+```
+⚠️ Merge conflict on GitHub — but your local branch is fine.
+
+This happened because staging moved forward (your brother's PR merged)
+after you created your branch. You just need to rebase onto the updated staging.
+
+Run these commands:
+
+1. git fetch origin
+2. git rebase origin/staging
+3. Open each conflicted file → resolve the <<<<<<< markers
+4. git add .
+5. git rebase --continue  ← repeat 3–5 for each conflicting commit
+6. git push origin feature/your-branch --force-with-lease
+
+The PR will update automatically — conflict warning will be gone.
+Ask your brother to re-review once it's clean.
+```
+
 ---
 
 ## 🚫 Strict Anti-Rules
@@ -937,7 +1074,8 @@ Firebase will deploy to live automatically once the PR is merged. ✅
 * ❌ Do NOT push directly to `staging`
 * ❌ Do NOT push directly to `master`
 * ❌ Do NOT merge your own PR
-* ❌ Do NOT force push
+* ❌ Do NOT use plain `git push --force` — always `--force-with-lease`
+* ❌ Do NOT use `git merge origin/staging` to resolve conflicts — use `git rebase`
 * ❌ Do NOT skip the PR process
 * ❌ Do NOT manually run Firebase deploy commands — GitHub Actions does this automatically
 
@@ -954,6 +1092,7 @@ During the week
   → Work on feature branches
   → Open PRs into staging
   → Review each other's PRs
+  → If PR shows conflicts → rebase onto staging before asking for review
 
 End of week (when stable)
   → Merge staging → master
