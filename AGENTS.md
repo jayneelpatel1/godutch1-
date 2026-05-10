@@ -4,6 +4,43 @@
 
 ---
 
+# 🚨 BRANCH RULE — READ BEFORE ANY CODE CHANGE (CRITICAL)
+
+**Before making ANY code change, OpenCode MUST run these exact commands:**
+
+```bash
+git branch --show-current         # Step 1: check current branch
+```
+
+Then:
+- If current branch is **NOT** `staging` → run:
+  ```bash
+  git checkout staging
+  git pull origin staging
+  ```
+- If current branch **IS** `staging` → just run:
+  ```bash
+  git pull origin staging
+  ```
+
+Then create a new task branch from `staging`:
+```bash
+git checkout -b <prefix>/<task-name>
+```
+
+**Branch naming:**
+| Prefix | Use |
+|--------|-----|
+| `fix/` | Bug fixes |
+| `feature/` | New features |
+| `ui/` | UI changes |
+| `refactor/` | Refactoring |
+| `hotfix/` | Urgent fixes |
+
+**Hard fail:** If OpenCode attempts any code change without first confirming the branch is correct, the change MUST be rejected. This rule is not optional.
+
+---
+
 # 📌 Project Overview
 
 **Project Name:** Kharchaa
@@ -383,29 +420,9 @@ Web Specific
 
 ## 🌿 Branch Creation (CRITICAL — MUST FOLLOW)
 
-Before starting ANY code changes for a new task, OpenCode MUST:
+**Refer to the 🚨 BRANCH RULE at the top of this file. This is the FIRST thing OpenCode does before any code change.**
 
-1. **Check current branch** — run `git branch --show-current`
-2. **If the branch name doesn't match the current task** — ask the user: "The current branch is `{name}` which doesn't match this task. Should I create a new branch?"
-3. **Always create a new branch from `staging`** for each task:
-
-```bash
-git checkout staging
-git pull origin staging
-git checkout -b <task-appropriate-branch-name>
-```
-
-4. **Branch naming must match the current task** — follow the naming rules:
-   - `fix/` for bugs
-   - `feature/` for new features  
-   - `ui/` for UI changes
-   - `refactor/` for refactoring
-   - `hotfix/` for urgent fixes
-
-**Why this matters:**
-- Old branches accumulate unrelated changes → confusing PRs
-- Each task needs its own clean branch from staging
-- Never reuse a branch from a previous task
+If the current branch name doesn't match the task, ask the user: "The current branch is `{name}` which doesn't match this task. Should I create a new branch?"
 
 ---
 
@@ -743,11 +760,7 @@ staging   → Live site (auto-deploys to Firebase on every push)
 feature/* → Where all actual work happens
 ```
 
-### ⚠️ STRICT RULES
-
-* ❌ NEVER push directly to `staging`
-* ❌ NEVER push directly to `master`
-* ✅ ALL work goes through a feature branch → PR → staging
+> Branch creation rules are at the top of this file — follow them before every task.
 
 ---
 
@@ -777,31 +790,6 @@ feature/* → Where all actual work happens
 
 8. Firebase auto-deploys to live site ✅
 ```
-
----
-
-## 🌿 Branch Creation Rule (MANDATORY)
-
-**Always create your feature branch from `staging` — never from `master` or another feature branch.**
-
-```bash
-# ✅ CORRECT — always do this first
-git checkout staging
-git pull origin staging         ← get the latest code
-git checkout -b feature/your-task-name
-
-# ❌ WRONG — never do these
-git checkout -b feature/x       ← branching without pulling latest
-git checkout master
-git checkout -b feature/x       ← branching from master
-git checkout feature/other
-git checkout -b feature/x       ← branching from another feature branch
-```
-
-**Why?**
-- Branching from `staging` means your code is always based on what's live
-- Branching from `master` = your code is behind (master is older than staging)
-- Branching from another feature branch = you inherit someone else's unreviewed code
 
 ---
 
