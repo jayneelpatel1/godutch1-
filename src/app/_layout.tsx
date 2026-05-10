@@ -47,6 +47,7 @@ export default function RootLayout() {
       if (!mounted) return;
 
       if (authUser) {
+        console.log('[RootLayout] Auth user detected:', authUser.id, authUser.email);
         // First, fetch latest user data from Supabase to get updated name
         try {
           const { data, error } = await supabase
@@ -54,17 +55,26 @@ export default function RootLayout() {
             .select('id, name, email, avatar')
             .eq('id', authUser.id)
             .maybeSingle();
+
+          if (error) {
+            console.error('[RootLayout] Error fetching user from Supabase:', JSON.stringify({ message: error.message, code: error.code }));
+          }
           
           if (data) {
+            console.log('[RootLayout] User found in Supabase users table:', data.id, data.name);
             // Merge Firebase user with Supabase data (preserve name from Supabase)
             setUser({ ...authUser, name: data.name || authUser.name });
           } else {
             // User doesn't exist in Supabase yet, create them
+            console.log('[RootLayout] User NOT found in Supabase — creating now...');
             try {
-              await createOrUpdateUser(authUser);
+              const syncResult = await createOrUpdateUser(authUser);
+              console.log('[RootLayout] User sync result:', syncResult);
               setUser(authUser);
             } catch (e) {
               console.error('[RootLayout] Failed to sync user to database:', e);
+              // If user creation fails, activity FK might fail too
+              console.warn('[RootLayout] *** WARNING: Activity creation will likely fail if user_id FK references users table ***');
               setUser(authUser);
             }
           }

@@ -13,11 +13,11 @@ interface ActivityItemProps {
 }
 
 const typeIcons: Record<string, { name: string; colors: [string, string] }> = {
-  expense_created: { name: 'receipt-outline', colors: ['#FEF3E2', '#FDE8CC'] },
-  expense_updated: { name: 'create-outline', colors: ['#FFF3E0', '#FFE8CC'] },
-  expense_deleted: { name: 'trash-outline', colors: ['#FFEBEE', '#FFCDD2'] },
-  group_created: { name: 'people-outline', colors: ['#E3F2FD', '#BBDEFB'] },
-  member_added: { name: 'person-add-outline', colors: ['#F3E5F5', '#E1BEE7'] },
+  expense_added: { name: 'receipt-outline', colors: ['#FEF3E2', '#FDE8CC'] },
+  expense_edited: { name: 'create-outline', colors: ['#FFF3E0', '#FFE8CC'] },
+  settlement: { name: 'swap-horizontal-outline', colors: ['#E8F5E9', '#C8E6C9'] },
+  member_joined: { name: 'person-add-outline', colors: ['#F3E5F5', '#E1BEE7'] },
+  member_left: { name: 'person-remove-outline', colors: ['#FFEBEE', '#FFCDD2'] },
 };
 
 function getDateDisplay(dateString: string): { top: string; bottom: string } {
@@ -35,11 +35,8 @@ function getDateDisplay(dateString: string): { top: string; bottom: string } {
 
 export default function ActivityItem({ activity, onPress }: ActivityItemProps) {
   const theme = useTheme();
-  const config = typeIcons[activity.type] || typeIcons.expense_created;
+  const config = typeIcons[activity.type] || typeIcons.expense_added;
   const dateDisplay = getDateDisplay(activity.createdAt);
-
-  const rawAmount = activity.metadata?.amount;
-  const amount = typeof rawAmount === 'number' ? rawAmount : null;
 
   return (
     <Pressable
@@ -60,31 +57,10 @@ export default function ActivityItem({ activity, onPress }: ActivityItemProps) {
       </View>
 
       <View style={styles.content}>
-        <ThemedText style={styles.title} numberOfLines={1}>
-          {activity.title}
+        <ThemedText style={styles.description} numberOfLines={2}>
+          {activity.description}
         </ThemedText>
-        {activity.description ? (
-          <ThemedText type="small" themeColor="textSecondary" style={styles.description} numberOfLines={1}>
-            {activity.description}
-          </ThemedText>
-        ) : null}
-        {activity.metadata?.groupName ? (
-          <View style={styles.groupBadge}>
-            <Ionicons name="folder-outline" size={10} color={theme.primary} />
-            <ThemedText type="small" style={[styles.groupName, { color: theme.primary }]}>
-              {activity.metadata.groupName as string}
-            </ThemedText>
-          </View>
-        ) : null}
       </View>
-
-      {amount !== null ? (
-        <View style={styles.amountColumn}>
-          <ThemedText style={[styles.amountText, { color: theme.primary }]}>
-            {'\u20B9'}{amount.toFixed(2)}
-          </ThemedText>
-        </View>
-      ) : null}
     </Pressable>
   );
 }
@@ -130,31 +106,9 @@ const styles = StyleSheet.create({
     flex: 1,
     marginRight: Spacing.two,
   },
-  title: {
-    fontSize: 15,
-    fontWeight: '600',
-    lineHeight: 20,
-  },
   description: {
-    marginTop: 1,
-  },
-  groupBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: 2,
-    gap: 3,
-  },
-  groupName: {
+    fontSize: 14,
     fontWeight: '500',
-    fontSize: 11,
-  },
-  amountColumn: {
-    alignItems: 'flex-end',
-    justifyContent: 'center',
-    minWidth: 70,
-  },
-  amountText: {
-    fontSize: 15,
-    fontWeight: '700',
+    lineHeight: 20,
   },
 });

@@ -1,8 +1,7 @@
 import { supabase } from './supabase';
-import { createActivity } from './activityService';
+import { createActivity, createActivityForGroupMembers, getUserName } from './activityService';
 
 import type { Group, GroupMember, GroupWithMembers, GroupInput } from '@/types/group';
-import type { ActivityInput } from '@/types/activity';
 
 export async function fetchGroups(userId: string): Promise<{ groups: GroupWithMembers[]; error: string | null }> {
   try {
@@ -107,20 +106,13 @@ export async function createGroup(groupInput: GroupInput, createdBy: string): Pr
 
     console.log('[groupService] Members inserted successfully');
 
-    // Log group_created activity
-    try {
-      const activityInput: ActivityInput = {
-        userId: createdBy,
-        groupId: groupData.id,
-        type: 'group_created',
-        title: `Group "${groupData.name}" created`,
-        description: `Group created with ${members.length} member${members.length !== 1 ? 's' : ''}`,
-        metadata: { groupName: groupData.name, memberCount: members.length },
-      };
-      await createActivity(activityInput);
-    } catch (e) {
-      console.error('[groupService] Failed to log group_created activity:', e);
-    }
+    // Notify other members about the new group
+    const creatorName = await getUserName(createdBy);
+    const groupDesc = `Group "${groupData.name}" created by ${creatorName}`;
+    await createActivityForGroupMembers(groupData.id, createdBy, {
+      type: 'group_created',
+      description: groupDesc,
+    });
 
     const groupWithMembers: GroupWithMembers = {
       id: groupData.id,
@@ -159,21 +151,15 @@ export async function deleteGroup(groupId: string, groupName?: string, deletedBy
       .delete()
       .eq('id', groupId);
 
+    // Notify remaining members about group deletion
     if (!error && deletedBy) {
-      // Log group_deleted activity
-      try {
-        const activityInput: ActivityInput = {
-          userId: deletedBy,
-          groupId,
-          type: 'group_deleted',
-          title: 'Group deleted',
-          description: groupName ? `Group "${groupName}" was deleted` : 'Group was deleted',
-          metadata: { groupName, groupId },
-        };
-        await createActivity(activityInput);
-      } catch (e) {
-        console.error('[groupService] Failed to log group_deleted activity:', e);
-      }
+      const deletedByName = await getUserName(deletedBy);
+      const groupLabel = groupName ? `"${groupName}"` : 'a group';
+      const delGroupDesc = `${groupLabel} deleted by ${deletedByName}`;
+      await createActivityForGroupMembers(groupId, deletedBy, {
+        type: 'group_deleted',
+        description: delGroupDesc,
+      });
     }
 
     return { error: error?.message || null };
@@ -194,19 +180,16 @@ export async function addGroupMember(groupId: string, userId: string, groupName?
       });
 
     if (!error) {
-      // Log member_added activity
-      try {
-        const activityInput: ActivityInput = {
-          userId,
-          groupId,
-          type: 'member_added',
-          title: 'New member joined',
-          description: groupName ? `Joined group "${groupName}"` : 'Joined a group',
-          metadata: { groupName },
-        };
-        await createActivity(activityInput);
-      } catch (e) {
-        console.error('[groupService] Failed to log member_added activity:', e);
+      const label = groupName ? `"${groupName}"` : 'a group';
+      const memberDesc = `You joined ${label}`;
+      const memberActivity = await createActivity({
+        userId,
+        groupId,
+        type: 'member_added',
+        description: memberDesc,
+      });
+      if (memberActivity.error) {
+        console.error('[groupService] FAILED to create member_added activity:', memberActivity.error);
       }
     }
 

@@ -13,9 +13,7 @@ export async function testCreateActivity() {
   const result = await createActivity({
     userId,
     type: 'group_created',
-    title: 'Test Activity',
-    description: 'This is a test activity to verify the activity system works',
-    metadata: { test: true },
+    description: 'Test Activity: This is a test activity to verify the activity system works',
   });
 
   if (result.error) {

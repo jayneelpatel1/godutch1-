@@ -1,7 +1,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useFocusEffect } from 'expo-router';
+import { router } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import GroupCard from '@/components/group-card';
@@ -13,7 +13,6 @@ import { useAuthStore } from '@/store/authStore';
 import { useGroups, useDeleteGroup } from '@/hooks/useGroups';
 import { useFetchGroupBalances } from '@/hooks/useSettlements';
 import { Spacing, BorderRadius } from '@/constants/theme';
-import { deleteOldActivities } from '@/services/activityService';
 import { showToast } from '@/components/Toast';
 
 export default function HomeScreen() {
@@ -24,13 +23,6 @@ export default function HomeScreen() {
   const deleteGroupMutation = useDeleteGroup();
   const fetchBalances = useFetchGroupBalances();
   const [balanceMap, setBalanceMap] = useState<Record<string, number>>({});
-
-  useFocusEffect(
-    useCallback(() => {
-      deleteOldActivities(7);
-      refetch();
-    }, [refetch])
-  );
 
   useEffect(() => {
     if (groups.length > 0) {
