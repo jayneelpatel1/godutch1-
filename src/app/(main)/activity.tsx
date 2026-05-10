@@ -1,28 +1,19 @@
-import { useMemo, useCallback } from 'react';
-import { StyleSheet, View, ScrollView, ActivityIndicator, Pressable, Platform } from 'react-native';
+import { useMemo } from 'react';
+import { StyleSheet, View, ScrollView, ActivityIndicator, Pressable } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router, useFocusEffect } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 
 import { ThemedText } from '@/components/themed-text';
 import { ThemedView } from '@/components/themed-view';
 import { useTheme } from '@/hooks/use-theme';
 import { useActivities } from '@/hooks/useActivities';
-import { deleteOldActivities } from '@/services/activityService';
 import { Spacing, BorderRadius } from '@/constants/theme';
 import ActivityItem from '@/components/ActivityItem';
 import Footer from '@/components/footer';
 
 export default function ActivityScreen() {
   const theme = useTheme();
-  const { activities, isLoading, error, refetch } = useActivities();
-  console.log('[ActivityScreen] DEBUG: activities:', activities?.length, 'isLoading:', isLoading, 'error:', error);
-
-  useFocusEffect(useCallback(() => {
-    console.log('[ActivityScreen] DEBUG: focus effect - deleting old activities and refetching');
-    deleteOldActivities(7);
-    refetch();
-  }, [refetch]));
+  const { activities, isLoading, error } = useActivities();
 
   const groupedActivities = useMemo(() => {
     const groups: { month: string; activities: typeof activities }[] = [];
@@ -83,72 +74,24 @@ export default function ActivityScreen() {
             </ThemedText>
           </View>
         ) : (
-          <>
-            <ScrollView
-              style={styles.scrollView}
-              contentContainerStyle={styles.scrollContent}
-              showsVerticalScrollIndicator={false}>
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}>
 
-              <View style={[styles.summaryCard, { backgroundColor: theme.backgroundElement }]}>
-                <View style={styles.summaryRow}>
-                  <ThemedText type="small" themeColor="textSecondary">
-                    Total Balance
-                  </ThemedText>
-                  <View style={styles.summaryActions}>
-                    <Pressable style={styles.summaryActionBtn} hitSlop={6}>
-                      <Ionicons name="eye-outline" size={16} color={theme.textSecondary} />
-                    </Pressable>
-                  </View>
-                </View>
-                <ThemedText type="title" style={styles.summaryAmount}>
-                  {'\u20B9'}0.00
+            {groupedActivities.map((group) => (
+              <View key={group.month} style={styles.monthSection}>
+                <ThemedText style={[styles.monthHeader, { color: theme.textSecondary }]}>
+                  {group.month.toUpperCase()}
                 </ThemedText>
+                {group.activities.map((activity) => (
+                  <ActivityItem key={activity.id} activity={activity} />
+                ))}
               </View>
+            ))}
 
-              <View style={styles.actionRow}>
-                <Pressable
-                  style={[styles.actionBtn, { backgroundColor: theme.background, borderColor: theme.backgroundSelected }]}
-                  onPress={() => router.push('/expense')}>
-                  <Ionicons name="add-circle-outline" size={18} color={theme.primary} />
-                  <ThemedText type="small" style={[styles.actionBtnLabel, { color: theme.primary }]}>Add</ThemedText>
-                </Pressable>
-                <Pressable
-                  style={[styles.actionBtn, { backgroundColor: theme.background, borderColor: theme.backgroundSelected }]}
-                  onPress={() => router.push('/(main)')}>
-                  <Ionicons name="swap-horizontal-outline" size={18} color={theme.text} />
-                  <ThemedText type="small" style={styles.actionBtnLabel}>Settle</ThemedText>
-                </Pressable>
-                <Pressable
-                  style={[styles.actionBtn, { backgroundColor: theme.background, borderColor: theme.backgroundSelected }]}
-                  onPress={() => router.push('/(main)')}>
-                  <Ionicons name="people-outline" size={18} color={theme.text} />
-                  <ThemedText type="small" style={styles.actionBtnLabel}>Groups</ThemedText>
-                </Pressable>
-              </View>
-
-              {groupedActivities.map((group) => (
-                <View key={group.month} style={styles.monthSection}>
-                  <ThemedText style={[styles.monthHeader, { color: theme.textSecondary }]}>
-                    {group.month.toUpperCase()}
-                  </ThemedText>
-                  {group.activities.map((activity) => (
-                    <ActivityItem key={activity.id} activity={activity} />
-                  ))}
-                </View>
-              ))}
-
-              <Footer />
-            </ScrollView>
-
-            <View style={styles.fabContainer} pointerEvents="box-none">
-              <Pressable style={[styles.fab, styles.fabSecondary, { backgroundColor: theme.backgroundElement, shadowColor: '#000' }]}>
-                <Ionicons name="swap-horizontal" size={20} color={theme.text} />
-              </Pressable>
-              <Pressable style={[styles.fab, styles.fabPrimary, { backgroundColor: theme.primary, shadowColor: theme.primary }]}>
-                <Ionicons name="add" size={26} color="#FFFFFF" />
-              </Pressable>
-            </View>
-          </>
+            <Footer />
+          </ScrollView>
         )}
       </SafeAreaView>
     </ThemedView>
@@ -176,47 +119,6 @@ const styles = StyleSheet.create({
   settingsBtn: {
     padding: Spacing.one,
   },
-  summaryCard: {
-    borderRadius: BorderRadius,
-    padding: Spacing.four,
-    marginBottom: Spacing.three,
-  },
-  summaryRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: Spacing.one,
-  },
-  summaryActions: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-  },
-  summaryActionBtn: {
-    padding: 2,
-  },
-  summaryAmount: {
-    fontSize: 38,
-    fontWeight: '700',
-    letterSpacing: -0.5,
-  },
-  actionRow: {
-    flexDirection: 'row',
-    gap: Spacing.two,
-    marginBottom: Spacing.four,
-  },
-  actionBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: Spacing.one,
-    paddingVertical: Spacing.two + 4,
-    borderRadius: BorderRadius,
-    borderWidth: 1,
-  },
-  actionBtnLabel: {
-    fontWeight: '600',
-  },
   monthSection: {
     marginBottom: Spacing.three,
   },
@@ -229,36 +131,8 @@ const styles = StyleSheet.create({
   },
   scrollView: { flex: 1 },
   scrollContent: {
-    paddingBottom: 130,
+    paddingBottom: 40,
     flexGrow: 1,
-  },
-  fabContainer: {
-    position: 'absolute',
-    bottom: 24,
-    right: Spacing.three,
-    gap: Spacing.two,
-    alignItems: 'center',
-  },
-  fab: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
-    alignItems: 'center',
-    justifyContent: 'center',
-    elevation: 6,
-    shadowOffset: { width: 0, height: 3 },
-    shadowOpacity: 0.25,
-    shadowRadius: 6,
-  },
-  fabSecondary: {
-    elevation: 4,
-    shadowOpacity: 0.15,
-    shadowRadius: 4,
-  },
-  fabPrimary: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
   },
   emptyState: {
     alignItems: 'center',

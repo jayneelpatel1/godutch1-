@@ -1,8 +1,7 @@
 import { supabase } from './supabase';
-import { createActivity } from './activityService';
+import { createActivityForGroupMembers, getUserName, getGroupName } from './activityService';
 
 import type { Settlement, SettlementInput } from '@/types/settlement';
-import type { ActivityInput } from '@/types/activity';
 
 export async function createSettlement(
   input: SettlementInput
@@ -34,19 +33,17 @@ export async function createSettlement(
       createdAt: data.created_at as string,
     };
 
-    try {
-      const activityInput: ActivityInput = {
-        userId: input.payerId,
-        groupId: input.groupId,
-        type: 'settlement_made',
-        title: `Settlement of ₹${input.amount.toFixed(2)}`,
-        description: `Payment from ${input.payerId} to ${input.receiverId}`,
-        metadata: { amount: input.amount, payerId: input.payerId, receiverId: input.receiverId },
-      };
-      await createActivity(activityInput);
-    } catch (e) {
-      console.error('[settlementService] Failed to log settlement_made activity:', e);
-    }
+    // Notify group members about the settlement
+    const [payerName, receiverName, groupName] = await Promise.all([
+      getUserName(input.payerId),
+      getUserName(input.receiverId),
+      getGroupName(input.groupId),
+    ]);
+    const settlementDesc = `Settlement of ₹${input.amount.toFixed(2)} from ${payerName} to ${receiverName} in ${groupName}`;
+    await createActivityForGroupMembers(input.groupId, input.payerId, {
+      type: 'settlement_made',
+      description: settlementDesc,
+    });
 
     return { settlement, error: null };
   } catch (e: any) {
@@ -66,20 +63,16 @@ export async function deleteSettlement(
       .delete()
       .eq('id', settlementId);
 
-    if (!error && userId) {
-      try {
-        const activityInput: ActivityInput = {
-          userId,
-          groupId,
-          type: 'expense_deleted',
-          title: 'Settlement deleted',
-          description: 'A settlement record was removed',
-          metadata: { settlementId },
-        };
-        await createActivity(activityInput);
-      } catch (e) {
-        console.error('[settlementService] Failed to log settlement deletion:', e);
-      }
+    if (!error && userId && groupId) {
+      const [deleterName, groupName] = await Promise.all([
+        getUserName(userId),
+        getGroupName(groupId),
+      ]);
+      const delSettleDesc = `Settlement deleted by ${deleterName} in ${groupName}`;
+      await createActivityForGroupMembers(groupId, userId, {
+        type: 'settlement_deleted',
+        description: delSettleDesc,
+      });
     }
 
     return { error: error?.message || null };

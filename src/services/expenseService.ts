@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { createActivity, createActivityForGroupMembers } from './activityService';
+import { createActivityForGroupMembers, getUserName, getGroupName } from './activityService';
 
 import type { Expense, ExpenseInput, ExpenseSplit, ExpenseWithSplits } from '@/types/expense';
 
@@ -97,34 +97,20 @@ export async function createExpense(input: ExpenseInput): Promise<{ expense: Exp
       })),
     };
 
-    // DEBUG: Log expense_created activity creation
-    console.log('[expenseService] DEBUG: Creating expense_created activity for creator:', { userId: input.paidBy, groupId: input.groupId, note: input.note, amount: input.amount });
-    try {
-      const actorResult = await createActivity({
-        userId: input.paidBy,
-        groupId: input.groupId,
-        type: 'expense_created',
-        title: `Expense added: ${input.note || expense.category}`,
-        description: `₹${input.amount.toFixed(2)} · ${input.category}`,
-        metadata: { amount: input.amount, category: input.category, note: input.note },
-      });
-      console.log('[expenseService] DEBUG: Actor activity result:', actorResult);
-    } catch (e) {
-      console.error('[expenseService] DEBUG: Failed to log expense_created activity:', e);
-    }
-
-    // DEBUG: Log group member notification attempt
-    console.log('[expenseService] DEBUG: Creating activities for group members:', { groupId: input.groupId, actorId: input.paidBy });
-    try {
-      const membersResult = await createActivityForGroupMembers(input.groupId, input.paidBy, {
-        type: 'expense_created',
-        title: input.note || 'New expense added',
-        description: `₹${input.amount.toFixed(2)} · ${input.category}`,
-        metadata: { amount: input.amount, category: input.category, note: input.note },
-      });
-      console.log('[expenseService] DEBUG: Group members activity result:', membersResult);
-    } catch (e) {
-      console.error('[expenseService] DEBUG: Failed to notify group members:', e);
+    // Log expense_created activity for all other group members (not the creator)
+    const [userName, groupName] = await Promise.all([
+      getUserName(input.paidBy),
+      getGroupName(input.groupId),
+    ]);
+    const memberDesc = `Expense added by ${userName} in ${groupName} — ₹${input.amount.toFixed(2)}`;
+    const membersActivity = await createActivityForGroupMembers(input.groupId, input.paidBy, {
+      type: 'expense_created',
+      description: memberDesc,
+    });
+    if (membersActivity.error) {
+      console.error('[expenseService] FAILED to create activities for group members:', membersActivity.error);
+    } else {
+      console.log('[expenseService] Activities created for', membersActivity.count, 'group members');
     }
 
     return { expense, error: null };
@@ -167,31 +153,19 @@ export async function updateExpense(expenseId: string, updates: Partial<ExpenseI
         .insert(splits);
     }
 
-    // Log expense_updated activity for the updater
-    if (paidBy) {
-      try {
-        await createActivity({
-          userId: paidBy,
-          groupId,
-          type: 'expense_updated',
-          title: 'Expense updated',
-          description: updates.note || updates.category || 'Expense details changed',
-          metadata: { expenseId, ...updates },
-        });
-      } catch (e) {
-        console.error('[expenseService] Failed to log expense_updated activity:', e);
-      }
-
-      // Notify all other group members about the update
-      try {
-        await createActivityForGroupMembers(groupId!, paidBy, {
-          type: 'expense_updated',
-          title: 'Expense updated',
-          description: updates.note || 'An expense was modified',
-          metadata: { expenseId, ...updates },
-        });
-      } catch (e) {
-        console.error('[expenseService] Failed to notify group members about update:', e);
+    // Notify all other group members about the update
+    if (paidBy && groupId) {
+      const [userName, groupName] = await Promise.all([
+        getUserName(paidBy),
+        getGroupName(groupId),
+      ]);
+      const memberUpdDesc = `Expense updated by ${userName} in ${groupName}`;
+      const membersUpd = await createActivityForGroupMembers(groupId, paidBy, {
+        type: 'expense_updated',
+        description: memberUpdDesc,
+      });
+      if (membersUpd.error) {
+        console.error('[expenseService] FAILED to notify members about update:', membersUpd.error);
       }
     }
 
@@ -208,31 +182,19 @@ export async function deleteExpense(expenseId: string, groupId?: string, paidBy?
       .delete()
       .eq('id', expenseId);
 
-    // Log expense_deleted activity for the deleter
-    if (paidBy) {
-      try {
-        await createActivity({
-          userId: paidBy,
-          groupId,
-          type: 'expense_deleted',
-          title: 'Expense deleted',
-          description: note || 'Expense was removed',
-          metadata: { expenseId },
-        });
-      } catch (e) {
-        console.error('[expenseService] Failed to log expense_deleted activity:', e);
-      }
-
-      // Notify all other group members about the deletion
-      try {
-        await createActivityForGroupMembers(groupId!, paidBy, {
-          type: 'expense_deleted',
-          title: 'Expense deleted',
-          description: note || 'An expense was removed',
-          metadata: { expenseId },
-        });
-      } catch (e) {
-        console.error('[expenseService] Failed to notify group members about deletion:', e);
+    // Notify all other group members about the deletion
+    if (paidBy && groupId) {
+      const [userName, groupName] = await Promise.all([
+        getUserName(paidBy),
+        getGroupName(groupId),
+      ]);
+      const memberDelDesc = `Expense deleted by ${userName} in ${groupName}`;
+      const membersDel = await createActivityForGroupMembers(groupId, paidBy, {
+        type: 'expense_deleted',
+        description: memberDelDesc,
+      });
+      if (membersDel.error) {
+        console.error('[expenseService] FAILED to notify members about deletion:', membersDel.error);
       }
     }
 

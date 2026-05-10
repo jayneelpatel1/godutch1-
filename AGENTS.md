@@ -379,6 +379,36 @@ Web Specific
 
 ---
 
+## 🤖 AI Behavior (OpenCode) — Mandatory Rules
+
+## 🌿 Branch Creation (CRITICAL — MUST FOLLOW)
+
+Before starting ANY code changes for a new task, OpenCode MUST:
+
+1. **Check current branch** — run `git branch --show-current`
+2. **If the branch name doesn't match the current task** — ask the user: "The current branch is `{name}` which doesn't match this task. Should I create a new branch?"
+3. **Always create a new branch from `staging`** for each task:
+
+```bash
+git checkout staging
+git pull origin staging
+git checkout -b <task-appropriate-branch-name>
+```
+
+4. **Branch naming must match the current task** — follow the naming rules:
+   - `fix/` for bugs
+   - `feature/` for new features  
+   - `ui/` for UI changes
+   - `refactor/` for refactoring
+   - `hotfix/` for urgent fixes
+
+**Why this matters:**
+- Old branches accumulate unrelated changes → confusing PRs
+- Each task needs its own clean branch from staging
+- Never reuse a branch from a previous task
+
+---
+
 ## 🤖 AI Behavior (OpenCode) — Dry Run Rules
 
 After implementing any code change, OpenCode MUST:
