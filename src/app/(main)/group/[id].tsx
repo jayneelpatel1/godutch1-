@@ -345,7 +345,7 @@ export default function GroupDetailsScreen() {
                     {tx.type === 'expense' ? (
                       <ExpenseCard
                         expense={tx.data}
-                        onPress={() => router.push(`/expense/${tx.id}`)}
+                        onPress={() => router.push(`/expense/${tx.id}?groupId=${id}`)}
                         onDelete={() => handleDeleteExpense(tx.id)}
                         groupId={id as string}
                         paidByName={userMap[tx.data.paidBy] || 'Unknown'}

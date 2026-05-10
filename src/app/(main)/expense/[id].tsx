@@ -30,9 +30,18 @@ interface UserMap {
 export default function ExpenseDetailsScreen() {
   const router = useRouter();
   const theme = useTheme();
-  const { id } = useLocalSearchParams<{ id: string }>();
+  const { id, groupId: paramGroupId } = useLocalSearchParams<{ id: string; groupId?: string }>();
   const { expense, isLoading: loadingExpense } = useExpense(id as string);
   const deleteExpenseMutation = useDeleteExpense(expense?.groupId || '');
+
+  const handleBack = () => {
+    const groupId = paramGroupId || expense?.groupId;
+    if (groupId) {
+      router.push(`/group/${groupId}`);
+    } else {
+      router.back();
+    }
+  };
 
   const [userNames, setUserNames] = useState<UserMap>({});
   const [loading, setLoading] = useState(true);
@@ -65,7 +74,7 @@ export default function ExpenseDetailsScreen() {
   }, [expense?.id]);
 
   const handleEdit = () => {
-    router.push(`/expense/${id}/edit`);
+    router.push(`/expense/${id}/edit?groupId=${paramGroupId || expense?.groupId || ''}`);
   };
 
   const handleDelete = () => {
@@ -109,7 +118,7 @@ export default function ExpenseDetailsScreen() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Pressable onPress={handleBack} style={styles.backButton}>
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </Pressable>
             <ThemedText type="title">Expense Details</ThemedText>
@@ -125,7 +134,7 @@ export default function ExpenseDetailsScreen() {
       <ThemedView style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Pressable onPress={handleBack} style={styles.backButton}>
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </Pressable>
             <ThemedText type="title">Expense Details</ThemedText>
@@ -148,7 +157,7 @@ export default function ExpenseDetailsScreen() {
       <SafeAreaView style={styles.safeArea}>
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Pressable onPress={handleBack} style={styles.backButton}>
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </Pressable>
             <ThemedText type="title">Expense Details</ThemedText>

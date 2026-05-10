@@ -44,6 +44,13 @@ export default function AddExpenseScreen() {
   const [memberNames, setMemberNames] = useState<{ userId: string; name: string }[]>([]);
 
   const groupId = params.groupId || '';
+  const handleBack = () => {
+    if (params.groupId) {
+      router.replace(`/group/${params.groupId}`);
+    } else {
+      router.back();
+    }
+  };
   const createExpenseMutation = useCreateExpense(groupId);
 
   // Clear form when screen is focused (navigated to)
@@ -143,7 +150,7 @@ export default function AddExpenseScreen() {
         <Toast />
         <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           <View style={styles.header}>
-            <Pressable onPress={() => router.back()} style={styles.backButton}>
+            <Pressable onPress={handleBack} style={styles.backButton}>
               <Ionicons name="arrow-back" size={24} color={theme.text} />
             </Pressable>
             <ThemedText type="title">Add Expense</ThemedText>
@@ -157,7 +164,7 @@ export default function AddExpenseScreen() {
               <TextInput
                 style={[styles.amountInput, { color: theme.text }]}
                 value={amount}
-                onChangeText={setAmount}
+                onChangeText={(text) => setAmount(text.replace(/[^0-9.]/g, '').replace(/(\..*)\./g, '$1'))}
                 keyboardType="decimal-pad"
                 placeholder="0.00"
                 placeholderTextColor={theme.textSecondary}

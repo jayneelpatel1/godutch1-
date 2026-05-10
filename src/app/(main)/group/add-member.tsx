@@ -160,7 +160,7 @@ export default function AddMemberScreen() {
       <Toast />
       <SafeAreaView style={styles.safeArea}>
         <View style={styles.header}>
-          <Pressable onPress={() => router.push({ pathname: '/group/[id]', params: { id: groupId } })} style={styles.backButton}>
+          <Pressable onPress={() => router.back()} style={styles.backButton}>
             <Ionicons name="arrow-back" size={24} color={theme.text} />
           </Pressable>
           <ThemedText type="title">Add Member</ThemedText>
