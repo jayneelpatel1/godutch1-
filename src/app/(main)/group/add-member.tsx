@@ -1,3 +1,21 @@
+/**
+ * @screen AddMemberScreen
+ * @description Adds a new member to an existing group. Shows current members,
+ *              provides email search with debounced autocomplete suggestions,
+ *              and handles both registered and non-registered users.
+ *
+ * @route /group/[id]/add-member
+ * @auth Required
+ *
+ * @dependencies searchUsersByEmail, checkUserByEmail, addGroupMember
+ *
+ * @remarks
+ *   - Debounced search fires after 300ms of no typing
+ *   - Registered users are added directly to group_members
+ *   - Non-registered emails show an "Invite" button (opens mail app)
+ *   - Creator is always in the member list and cannot be removed
+ */
+
 import { useState, useCallback, useEffect, useRef, useMemo } from 'react';
 import { StyleSheet, View, TextInput, Pressable, Linking, ActivityIndicator, FlatList } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';

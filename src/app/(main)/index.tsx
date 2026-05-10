@@ -1,3 +1,15 @@
+/**
+ * @screen HomeScreen
+ * @description Main groups list screen. Shows all groups the user belongs to
+ *              with balance badges. Supports pull-to-refresh, group creation,
+ *              and group deletion (long-press on mobile, menu on web).
+ *
+ * @route / (main tab)
+ * @auth Required — redirects to login if no session
+ *
+ * @dependencies useGroups, useDeleteGroup, useFetchGroupBalances
+ */
+
 import { useState, useCallback, useEffect } from 'react';
 import { StyleSheet, View, ScrollView, Pressable, ActivityIndicator, RefreshControl } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
@@ -54,7 +66,6 @@ export default function HomeScreen() {
   };
 
   const handleDeleteGroup = (groupId: string, groupName: string) => {
-    console.log('[HomeScreen] handleDeleteGroup called for:', groupId, groupName);
     deleteGroupMutation.mutate({ groupId, groupName }, {
       onSuccess: () => {
         showToast('success', 'Group deleted successfully');

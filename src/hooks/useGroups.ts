@@ -5,6 +5,16 @@ import { useGroupStore } from '@/store/groupStore';
 import { createGroup, deleteGroup, fetchGroups, updateGroup } from '@/services/groupService';
 import type { GroupInput } from '@/types/group';
 
+/**
+ * @hook useGroups
+ * @description Fetches all groups the current user belongs to using React Query.
+ *              Syncs results into Zustand groupStore for immediate UI updates on mutations.
+ *
+ * @returns { groups: GroupWithMembers[], isLoading: boolean, error: string | null, refetch: () => void }
+ *
+ * @dependencies useAuthStore (reads current user ID), useGroupStore (local cache)
+ * @query-key ['groups', userId]
+ */
 export function useGroups() {
   const userId = useAuthStore((state) => state.user?.id);
   const groupsFromStore = useGroupStore((state) => state.groups);
@@ -14,12 +24,9 @@ export function useGroups() {
     queryKey: ['groups', userId],
     queryFn: async () => {
       if (!userId) {
-        console.log('[useGroups] No userId, returning empty');
         return { groups: [] };
       }
-      console.log('[useGroups] Fetching groups for userId:', userId);
       const result = await fetchGroups(userId);
-      console.log('[useGroups] Fetch result:', { groupCount: result.groups.length, error: result.error });
       if (result.groups.length > 0) {
         setLocalGroups(result.groups);
       }
@@ -28,8 +35,6 @@ export function useGroups() {
     enabled: !!userId,
   });
 
-  // Return groups from store (which gets updated immediately on delete)
-  // Fall back to query data if store is empty (initial load)
   const groups = groupsFromStore.length > 0 ? groupsFromStore : (data?.groups ?? []);
 
   return {
@@ -40,6 +45,14 @@ export function useGroups() {
   };
 }
 
+/**
+ * @hook useCreateGroup
+ * @description Creates a new group via Supabase and syncs to local store and query cache.
+ *
+ * @returns { UseMutationResult } — mutate with GroupInput
+ *
+ * @invalidates ['groups', userId], ['activities', userId]
+ */
 export function useCreateGroup() {
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user);
@@ -48,10 +61,6 @@ export function useCreateGroup() {
   return useMutation({
     mutationFn: async (groupInput: GroupInput) => {
       if (!userId) throw new Error('Not authenticated');
-
-      // Online-only mode: Skip local SQLite save
-      // Offline sync will be implemented in later phase
-
       const result = await createGroup(groupInput, userId.id);
       if (result.error) throw new Error(result.error);
       return result.group;
@@ -69,6 +78,14 @@ export function useCreateGroup() {
   });
 }
 
+/**
+ * @hook useUpdateGroup
+ * @description Updates group metadata via Supabase.
+ *
+ * @returns { UseMutationResult } — mutate with { groupId, updates }
+ *
+ * @invalidates ['groups', userId], ['activities', userId]
+ */
 export function useUpdateGroup() {
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);
@@ -87,6 +104,15 @@ export function useUpdateGroup() {
   });
 }
 
+/**
+ * @hook useDeleteGroup
+ * @description Deletes a group via Supabase, removes it from local store immediately,
+ *              and invalidates queries.
+ *
+ * @returns { UseMutationResult } — mutate with { groupId, groupName? }
+ *
+ * @invalidates ['groups', userId], ['activities', userId]
+ */
 export function useDeleteGroup() {
   const queryClient = useQueryClient();
   const userId = useAuthStore((state) => state.user?.id);
@@ -100,9 +126,7 @@ export function useDeleteGroup() {
       return result;
     },
     onSuccess: (_, variables) => {
-      // Update local store immediately
       removeLocalGroup(variables.groupId);
-      // Invalidate queries to refetch from server
       queryClient.invalidateQueries({ queryKey: ['groups', userId] });
       queryClient.invalidateQueries({ queryKey: ['activities', userId] });
     },

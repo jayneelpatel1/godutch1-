@@ -1,3 +1,17 @@
+/**
+ * @component ActivityItem
+ * @description Displays a single activity feed item with a date column,
+ *              gradient icon based on activity type, and description text.
+ *
+ * @used-in ActivityScreen
+ *
+ * @props
+ *   - activity: Activity      — The activity data to display
+ *   - onPress?: () => void    — Tap handler for the item
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';

@@ -4,6 +4,14 @@ import { firebaseAuth } from './firebaseConfig';
 
 import type { AuthUser } from '@/types/auth';
 
+/**
+ * @function onGoogleAuthStateChange
+ * @description Listens to Firebase auth state changes and maps the Firebase user
+ *              to the app's AuthUser type. Returns an unsubscribe function.
+ *
+ * @param callback — Called with AuthUser when logged in, null when logged out
+ * @returns Unsubscribe function to stop listening
+ */
 export function onGoogleAuthStateChange(callback: (user: AuthUser | null) => void) {
   return firebaseAuth.onAuthStateChanged((firebaseUser) => {
     if (firebaseUser) {
@@ -19,6 +27,12 @@ export function onGoogleAuthStateChange(callback: (user: AuthUser | null) => voi
   });
 }
 
+/**
+ * @function signOutWithGoogle
+ * @description Signs the current user out of Firebase Auth.
+ *
+ * @returns Object with error message (null on success)
+ */
 export async function signOutWithGoogle(): Promise<{ error: string | null }> {
   try {
     await signOut(firebaseAuth);

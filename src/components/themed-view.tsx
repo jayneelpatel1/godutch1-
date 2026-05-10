@@ -1,3 +1,17 @@
+/**
+ * @component ThemedView
+ * @description View wrapper that automatically applies the current theme's
+ *              background color. Supports overriding the color type.
+ *
+ * @used-in Every screen
+ *
+ * @props
+ *   - type?: ThemeColor   — Background color key (defaults to 'background')
+ *   - All ViewProps from react-native
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import { View, type ViewProps } from 'react-native';
 
 import { ThemeColor } from '@/constants/theme';

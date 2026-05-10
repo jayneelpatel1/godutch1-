@@ -1,3 +1,19 @@
+/**
+ * @component Toast
+ * @description Global toast notification system. Renders an animated slide-in
+ *              banner at the top of the screen for success/error/info messages.
+ *              Auto-dismisses after 3 seconds.
+ *
+ * @usage
+ *   import { showToast } from '@/components/Toast';
+ *   showToast('success', 'Group created!');
+ *
+ * @remarks Uses a global reference to avoid prop drilling.
+ *          The Toast component must be rendered once in the app tree (in _layout.tsx).
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import { useState, useEffect, useCallback } from 'react';
 import { View, Animated, Pressable, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
@@ -36,7 +52,6 @@ export function Toast() {
     }, 3000);
   }, [animation]);
 
-  // Expose showToast globally
   useEffect(() => {
     (global as any).showToast = showToast;
     return () => { delete (global as any).showToast; };

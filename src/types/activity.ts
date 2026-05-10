@@ -1,3 +1,11 @@
+/**
+ * @file Activity type definitions.
+ * @description Types for the activity feed system — tracks actions like expense
+ *              creation, settlement, member joining, etc. Each activity is tied to a user.
+ *
+ * @see mapToDbType — Converts logical types to DB-compatible strings
+ */
+
 export type ActivityType =
   | 'expense_added'
   | 'expense_edited'

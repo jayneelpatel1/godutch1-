@@ -1,3 +1,16 @@
+/**
+ * @screen MainTabLayout
+ * @description Tab navigation layout with three main tabs: Groups, Activity, Profile.
+ *              Uses a custom CenteredTabBar component for consistent cross-platform appearance.
+ *              Hidden tab screens (expense, create-group, group/*) are registered here
+ *              without tab bar buttons.
+ *
+ * @route /(main) — tab navigator
+ * @auth Required — child screens assume user is authenticated
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import { ThemeProvider, useLinkBuilder } from '@react-navigation/native';
 import { Tabs } from 'expo-router';
 import React from 'react';

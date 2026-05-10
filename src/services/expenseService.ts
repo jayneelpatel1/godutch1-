@@ -3,14 +3,19 @@ import { createActivityForGroupMembers, getUserName, getGroupName } from './acti
 
 import type { Expense, ExpenseInput, ExpenseSplit, ExpenseWithSplits } from '@/types/expense';
 
+/**
+ * @function fetchExpenses
+ * @description Retrieves all expenses for a group, ordered by date descending.
+ *              Includes the full expense_splits relation for each expense.
+ *
+ * @param groupId — UUID of the group
+ * @returns Object containing array of expenses (with splits) and error message
+ */
 export async function fetchExpenses(groupId: string): Promise<{ expenses: ExpenseWithSplits[]; error: string | null }> {
   try {
     const { data, error } = await supabase
       .from('expenses')
-      .select(`
-        *,
-        expense_splits(*)
-      `)
+      .select('*, expense_splits(*)')
       .eq('group_id', groupId)
       .order('date', { ascending: false });
 
@@ -28,14 +33,18 @@ export async function fetchExpenses(groupId: string): Promise<{ expenses: Expens
   }
 }
 
+/**
+ * @function fetchExpenseById
+ * @description Retrieves a single expense with its splits by expense ID.
+ *
+ * @param expenseId — UUID of the expense
+ * @returns Object containing the expense (with splits) or null, and error message
+ */
 export async function fetchExpenseById(expenseId: string): Promise<{ expense: ExpenseWithSplits | null; error: string | null }> {
   try {
     const { data, error } = await supabase
       .from('expenses')
-      .select(`
-        *,
-        expense_splits(*)
-      `)
+      .select('*, expense_splits(*)')
       .eq('id', expenseId)
       .single();
 
@@ -50,6 +59,17 @@ export async function fetchExpenseById(expenseId: string): Promise<{ expense: Ex
   }
 }
 
+/**
+ * @function createExpense
+ * @description Inserts a new expense into Supabase, inserts split records,
+ *              and notifies group members via activity feed.
+ *
+ * @param input — ExpenseInput with groupId, paidBy, amount, note, category, etc.
+ * @returns Object containing created expense (with splits) and error message
+ *
+ * @side-effects Inserts into `expenses` + `expense_splits` tables
+ *              Creates activity records for all group members except payer
+ */
 export async function createExpense(input: ExpenseInput): Promise<{ expense: ExpenseWithSplits | null; error: string | null }> {
   try {
     const { data: expenseData, error: expenseError } = await supabase
@@ -97,7 +117,6 @@ export async function createExpense(input: ExpenseInput): Promise<{ expense: Exp
       })),
     };
 
-    // Log expense_created activity for all other group members (not the creator)
     const [userName, groupName] = await Promise.all([
       getUserName(input.paidBy),
       getGroupName(input.groupId),
@@ -108,9 +127,7 @@ export async function createExpense(input: ExpenseInput): Promise<{ expense: Exp
       description: memberDesc,
     });
     if (membersActivity.error) {
-      console.error('[expenseService] FAILED to create activities for group members:', membersActivity.error);
-    } else {
-      console.log('[expenseService] Activities created for', membersActivity.count, 'group members');
+      console.error('[expenseService] Failed to create activities for group members:', membersActivity.error);
     }
 
     return { expense, error: null };
@@ -119,6 +136,17 @@ export async function createExpense(input: ExpenseInput): Promise<{ expense: Exp
   }
 }
 
+/**
+ * @function updateExpense
+ * @description Updates an expense's fields and/or splits. If splits are provided,
+ *              deletes all existing splits and re-inserts. Notifies group members.
+ *
+ * @param expenseId — UUID of the expense to update
+ * @param updates — Partial ExpenseInput containing fields to update
+ * @param groupId — Group UUID (required for activity notifications)
+ * @param paidBy — User UUID who made the change (required for activity notifications)
+ * @returns Object with error message (null on success)
+ */
 export async function updateExpense(expenseId: string, updates: Partial<ExpenseInput>, groupId?: string, paidBy?: string): Promise<{ error: string | null }> {
   try {
     const dbUpdates: Record<string, unknown> = {};
@@ -153,7 +181,6 @@ export async function updateExpense(expenseId: string, updates: Partial<ExpenseI
         .insert(splits);
     }
 
-    // Notify all other group members about the update
     if (paidBy && groupId) {
       const [userName, groupName] = await Promise.all([
         getUserName(paidBy),
@@ -165,7 +192,7 @@ export async function updateExpense(expenseId: string, updates: Partial<ExpenseI
         description: memberUpdDesc,
       });
       if (membersUpd.error) {
-        console.error('[expenseService] FAILED to notify members about update:', membersUpd.error);
+        console.error('[expenseService] Failed to notify members about update:', membersUpd.error);
       }
     }
 
@@ -175,14 +202,23 @@ export async function updateExpense(expenseId: string, updates: Partial<ExpenseI
   }
 }
 
-export async function deleteExpense(expenseId: string, groupId?: string, paidBy?: string, note?: string): Promise<{ error: string | null }> {
+/**
+ * @function deleteExpense
+ * @description Deletes an expense by ID and notifies group members.
+ *              Cascading delete should handle expense_splits via DB constraint.
+ *
+ * @param expenseId — UUID of the expense to delete
+ * @param groupId — Group UUID (required for activity notifications)
+ * @param paidBy — User UUID who deleted (required for activity notifications)
+ * @returns Object with error message (null on success)
+ */
+export async function deleteExpense(expenseId: string, groupId?: string, paidBy?: string): Promise<{ error: string | null }> {
   try {
     const { error } = await supabase
       .from('expenses')
       .delete()
       .eq('id', expenseId);
 
-    // Notify all other group members about the deletion
     if (paidBy && groupId) {
       const [userName, groupName] = await Promise.all([
         getUserName(paidBy),
@@ -194,7 +230,7 @@ export async function deleteExpense(expenseId: string, groupId?: string, paidBy?
         description: memberDelDesc,
       });
       if (membersDel.error) {
-        console.error('[expenseService] FAILED to notify members about deletion:', membersDel.error);
+        console.error('[expenseService] Failed to notify members about deletion:', membersDel.error);
       }
     }
 

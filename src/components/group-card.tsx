@@ -1,3 +1,24 @@
+/**
+ * @component GroupCard
+ * @description Displays a group card with avatar stack, group name,
+ *              member count, and balance badge (you are owed / you owe / settled up).
+ *              Supports context menu for delete (long-press on mobile, button on web).
+ *
+ * @used-in HomeScreen (group list)
+ *
+ * @props
+ *   - group: GroupWithMembers  — The group data to display
+ *   - onPress?: () => void     — Tap handler (navigates to group detail)
+ *   - onDelete?: () => void    — Delete handler (shows confirmation first)
+ *   - balanceAmount?: number   — User's net balance for this group
+ *                                 (positive = owed, negative = owes)
+ *
+ * @remarks Avatar stack shows first 3 members + overflow count.
+ *          Balance badge color: green for positive, red for negative, gray for settled.
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import { Pressable, StyleSheet, View, Alert, Platform } from 'react-native';
 import { ThemedText } from './themed-text';
 import type { GroupWithMembers } from '@/types/group';
@@ -20,12 +41,10 @@ export default function GroupCard({ group, onPress, onDelete, balanceAmount }: G
 
   const showContextMenu = () => {
     if (Platform.OS === 'web') {
-      // On web, show delete confirmation directly
       if (window.confirm(`Delete "${group.name}"? This action cannot be undone.`)) {
         onDelete?.();
       }
     } else {
-      // On mobile, show context menu
       Alert.alert(
         group.name,
         'What would you like to do?',

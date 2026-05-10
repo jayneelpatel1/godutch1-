@@ -1,3 +1,25 @@
+/**
+ * @component SplitSelector
+ * @description Interactive split-type selector with per-member input fields.
+ *              Supports four split modes: equal, exact, percentage, ratio.
+ *              Handles rounding corrections automatically to ensure total matches amount.
+ *
+ * @used-in AddExpenseScreen, EditExpenseScreen
+ *
+ * @props
+ *   - type: SplitType           — Current split mode ('equal' | 'exact' | 'percentage' | 'ratio')
+ *   - onTypeChange: (type) => void — Called when user switches split mode
+ *   - amount: number            — Total expense amount to split
+ *   - members: { userId, name }[] — Group members to split between
+ *   - splits: ExpenseSplit[]    — Current split values
+ *   - onSplitsChange: (splits) => void — Called when any split value changes
+ *
+ * @remarks Rounding fix: the last member's amount is adjusted so
+ *          sum of splits exactly equals the total amount.
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import { View, TextInput, Pressable, StyleSheet } from 'react-native';
 import { useEffect, useState } from 'react';
 
@@ -15,11 +37,22 @@ interface SplitSelectorProps {
   onSplitsChange: (splits: ExpenseSplit[]) => void;
 }
 
+function calculateEqualSplits(amount: number, members: { userId: string }[]): ExpenseSplit[] {
+  if (members.length === 0) return [];
+  const perPerson = Math.round((amount / members.length) * 100) / 100;
+  const newSplits = members.map((m) => ({ userId: m.userId, owedAmount: perPerson }));
+  const total = newSplits.reduce((s, sp) => s + sp.owedAmount, 0);
+  const diff = Math.round((amount - total) * 100) / 100;
+  if (Math.abs(diff) > 0 && newSplits.length > 0) {
+    newSplits[newSplits.length - 1].owedAmount = Math.round((newSplits[newSplits.length - 1].owedAmount + diff) * 100) / 100;
+  }
+  return newSplits;
+}
+
 export default function SplitSelector({ type, onTypeChange, amount, members, splits, onSplitsChange }: SplitSelectorProps) {
   const theme = useTheme();
   const [selectedMembers, setSelectedMembers] = useState<Set<string>>(new Set());
 
-  // Initialize selectedMembers when members change
   useEffect(() => {
     setSelectedMembers(new Set(members.map(m => m.userId)));
   }, [members.length]);
@@ -31,20 +64,10 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
     { id: 'ratio', label: 'Ratio' },
   ];
 
-  // Initialize splits when members change or amount changes
   useEffect(() => {
     if (members.length > 0 && amount > 0) {
-      const selectedCount = selectedMembers.size;
-      if (type === 'equal' && selectedCount > 0) {
-        const perPerson = Math.round((amount / selectedCount) * 100) / 100;
-        const selectedMembersList = members.filter(m => selectedMembers.has(m.userId));
-        const newSplits = selectedMembersList.map((m) => ({ userId: m.userId, owedAmount: perPerson }));
-        const total = newSplits.reduce((s, sp) => s + sp.owedAmount, 0);
-        const diff = Math.round((amount - total) * 100) / 100;
-        if (Math.abs(diff) > 0 && newSplits.length > 0) {
-          newSplits[newSplits.length - 1].owedAmount = Math.round((newSplits[newSplits.length - 1].owedAmount + diff) * 100) / 100;
-        }
-        onSplitsChange(newSplits);
+      if (type === 'equal') {
+        onSplitsChange(calculateEqualSplits(amount, members));
       } else if (type === 'percentage') {
         const defaultPercent = Math.round((100 / members.length) * 100) / 100;
         const owedAmount = Math.round((amount * defaultPercent) / 100 * 100) / 100;
@@ -63,18 +86,7 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
     if (members.length === 0) return;
 
     if (newType === 'equal') {
-      const selectedCount = selectedMembers.size;
-      if (selectedCount > 0) {
-        const perPerson = Math.round((amount / selectedCount) * 100) / 100;
-        const selectedMembersList = members.filter(m => selectedMembers.has(m.userId));
-        const newSplits = selectedMembersList.map((m) => ({ userId: m.userId, owedAmount: perPerson }));
-        const total = newSplits.reduce((s, sp) => s + sp.owedAmount, 0);
-        const diff = Math.round((amount - total) * 100) / 100;
-        if (Math.abs(diff) > 0 && newSplits.length > 0) {
-          newSplits[newSplits.length - 1].owedAmount = Math.round((newSplits[newSplits.length - 1].owedAmount + diff) * 100) / 100;
-        }
-        onSplitsChange(newSplits);
-      }
+      onSplitsChange(calculateEqualSplits(amount, members));
     } else if (newType === 'percentage') {
       const defaultPercent = Math.round((100 / members.length) * 100) / 100;
       const owedAmount = Math.round((amount * defaultPercent) / 100 * 100) / 100;
@@ -91,7 +103,7 @@ export default function SplitSelector({ type, onTypeChange, amount, members, spl
     setSelectedMembers(prev => {
       const newSet = new Set(prev);
       if (newSet.has(userId)) {
-        if (newSet.size > 1) { // Keep at least one member selected
+        if (newSet.size > 1) {
           newSet.delete(userId);
         }
       } else {

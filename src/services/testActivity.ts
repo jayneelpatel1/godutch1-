@@ -1,3 +1,9 @@
+/**
+ * @file Test helper for the activity system.
+ * @description Creates a test activity for the currently logged-in user.
+ *              Used during development to verify the activity feed works end-to-end.
+ */
+
 import { createActivity } from './activityService';
 import { useAuthStore } from '@/store/authStore';
 
@@ -7,8 +13,6 @@ export async function testCreateActivity() {
     console.error('[testActivity] No user logged in');
     return;
   }
-
-  console.log('[testActivity] Creating test activity for user:', userId);
 
   const result = await createActivity({
     userId,

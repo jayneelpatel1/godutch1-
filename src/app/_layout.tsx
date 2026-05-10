@@ -1,10 +1,15 @@
 /**
- * Root Layout Component
- * ------------------
- * Handles:
- * - Listening to Firebase auth state changes
- * - Redirecting to auth or main routes based on user state
- * - Managing splash screen visibility
+ * @screen RootLayout
+ * @description Root layout that initializes Firebase auth listener, manages splash screen,
+ *              and redirects to auth or main routes based on user state.
+ *
+ * @route /
+ * @auth Firebase Auth — listens to onAuthStateChanged
+ *
+ * @remarks
+ *   - SplashScreen stays visible until auth state is resolved (prevents flash)
+ *   - User is synced to Supabase on first login via createOrUpdateUser
+ *   - Fonts (Ionicons) must load before rendering to avoid icon gaps
  */
 
 import { useEffect } from 'react';
@@ -19,62 +24,36 @@ import { onGoogleAuthStateChange } from '@/services/googleAuth';
 import { createOrUpdateUser } from '@/services/userService';
 import { supabase } from '@/services/supabase';
 
-// Prevent auto-hiding splash screen until auth state is resolved
 SplashScreen.preventAutoHideAsync();
 
 export default function RootLayout() {
-  // ---------- Auth State ----------
   const user = useAuthStore((state) => state.user);
   const isLoading = useAuthStore((state) => state.isLoading);
   const setUser = useAuthStore((state) => state.setUser);
   const setLoading = useAuthStore((state) => state.setLoading);
   const router = useRouter();
+  const [fontsLoaded] = useFonts({ ...Ionicons.font });
 
-  const [fontsLoaded] = useFonts({
-    ...Ionicons.font,
-  });
-
-  // ---------- Effects ----------
-  
-  /**
-   * Subscribe to Firebase auth state changes
-   * Updates Zustand store and hides splash screen when done
-   */
   useEffect(() => {
     let mounted = true;
-
     const unsubscribe = onGoogleAuthStateChange(async (authUser) => {
       if (!mounted) return;
-
       if (authUser) {
-        console.log('[RootLayout] Auth user detected:', authUser.id, authUser.email);
-        // First, fetch latest user data from Supabase to get updated name
         try {
           const { data, error } = await supabase
             .from('users')
             .select('id, name, email, avatar')
             .eq('id', authUser.id)
             .maybeSingle();
-
-          if (error) {
-            console.error('[RootLayout] Error fetching user from Supabase:', JSON.stringify({ message: error.message, code: error.code }));
-          }
-          
+          if (error) console.error('[RootLayout] Error fetching user from Supabase:', error);
           if (data) {
-            console.log('[RootLayout] User found in Supabase users table:', data.id, data.name);
-            // Merge Firebase user with Supabase data (preserve name from Supabase)
             setUser({ ...authUser, name: data.name || authUser.name });
           } else {
-            // User doesn't exist in Supabase yet, create them
-            console.log('[RootLayout] User NOT found in Supabase — creating now...');
             try {
-              const syncResult = await createOrUpdateUser(authUser);
-              console.log('[RootLayout] User sync result:', syncResult);
+              await createOrUpdateUser(authUser);
               setUser(authUser);
             } catch (e) {
               console.error('[RootLayout] Failed to sync user to database:', e);
-              // If user creation fails, activity FK might fail too
-              console.warn('[RootLayout] *** WARNING: Activity creation will likely fail if user_id FK references users table ***');
               setUser(authUser);
             }
           }
@@ -88,36 +67,17 @@ export default function RootLayout() {
       setLoading(false);
       SplashScreen.hideAsync();
     });
-
-    return () => {
-      mounted = false;
-      unsubscribe();
-    };
+    return () => { mounted = false; unsubscribe(); };
   }, [setUser, setLoading]);
 
-  /**
-   * Handle navigation based on auth state
-   * Redirects to /(main) if logged in, /(auth)/login if not
-   */
   useEffect(() => {
     if (isLoading) return;
-
-    // Avoid unnecessary redirects if already on the correct route
-    if (user) {
-      router.replace('/(main)');
-    } else {
-      router.replace('/(auth)/login');
-    }
+    if (user) router.replace('/(main)');
+    else router.replace('/(auth)/login');
   }, [isLoading, user, router]);
 
-  // ---------- Render ----------
+  if (isLoading || !fontsLoaded) return null;
 
-  // Show nothing while loading (splash screen is visible)
-  if (isLoading || !fontsLoaded) {
-    return null;
-  }
-
-  // Wrap app with QueryProvider for React Query
   return (
     <QueryProvider>
       <Slot />

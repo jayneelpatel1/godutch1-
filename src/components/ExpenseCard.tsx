@@ -1,3 +1,18 @@
+/**
+ * @component ExpenseCard
+ * @description Displays a single expense row with category icon, note,
+ *              paid-by name, date, amount, and the current user's share/owe amount.
+ *
+ * @used-in ExpenseList, GroupDetail
+ *
+ * @props
+ *   - expense: Expense         — The expense data to display
+ *   - onPress?: () => void     — Tap handler
+ *   - paidByName?: string      — Display name of the person who paid
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import { Pressable, StyleSheet, View } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 

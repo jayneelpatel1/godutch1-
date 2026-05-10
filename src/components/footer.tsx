@@ -1,3 +1,12 @@
+/**
+ * @component Footer
+ * @description Simple footer with "Made with ❤️ in India" message.
+ *
+ * @used-in HomeScreen, ActivityScreen
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import { StyleSheet, View } from 'react-native';
 import { ThemedText } from './themed-text';
 import { useTheme } from '@/hooks/use-theme';

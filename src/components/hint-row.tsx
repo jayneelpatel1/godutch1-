@@ -1,3 +1,12 @@
+/**
+ * @component HintRow
+ * @description Development helper component showing a title and code snippet side-by-side.
+ *
+ * @used-in Development templates (not used in production screens)
+ *
+ * @platform Android ✅ | iOS ✅ | Web ✅
+ */
+
 import React, { type ReactNode } from 'react';
 import { View, StyleSheet } from 'react-native';
 
