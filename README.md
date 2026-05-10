@@ -1,56 +1,142 @@
-# Welcome to your Expo app 👋
+# Kharchaa
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+Expense sharing app for friends and groups — built with React Native + Expo (Android, iOS, Web).
 
-## Get started
+Track shared expenses, split bills, and settle debts. Inspired by Splitwise.
 
-1. Install dependencies
+## Features
+
+- Google Sign-In authentication (Firebase Auth)
+- Create and manage groups
+- Add expenses with equal or custom splits
+- View group balances and simplified settlements
+- Activity feed for all group events
+- Cross-platform: Android, iOS, Web
+
+## Tech Stack
+
+| Layer | Technology |
+|-------|-----------|
+| Framework | React Native + Expo |
+| Routing | Expo Router (file-based) |
+| Auth | Firebase Authentication |
+| Backend | Supabase (PostgreSQL) |
+| Data Fetching | TanStack Query (React Query) |
+| State Management | Zustand |
+| Language | TypeScript (strict) |
+| Styling | StyleSheet + responsive design |
+| Linting | ESLint (expo config) |
+| Deployment | Firebase Hosting (auto via GitHub Actions) |
+
+## Prerequisites
+
+- Node.js 18+
+- npm
+- Expo CLI (`npm install -g expo-cli`)
+- Supabase project (URL + anon key)
+- Firebase project (Web config)
+
+## Getting Started
+
+1. Clone the repo
+
+   ```bash
+   git clone <repo-url>
+   cd kharchaa
+   ```
+
+2. Install dependencies
 
    ```bash
    npm install
    ```
 
-2. Start the app
+3. Set up environment variables in the project root.
+
+4. Start the app
 
    ```bash
    npx expo start
    ```
 
-In the output, you'll find options to open the app in a
+   Press `w` for Web, `a` for Android, or `i` for iOS.
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+## Project Structure
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
-
-## Get a fresh project
-
-When you're ready, run:
-
-```bash
-npm run reset-project
+```
+├── app/
+│   ├── (auth)/         Authentication screens (login, signup)
+│   └── (main)/         Main app screens (groups, expenses, profile)
+├── components/
+│   ├── ui/             Generic UI components (Button, Input, Card)
+│   └── ...             Shared feature components
+├── features/           Feature module components
+├── hooks/              Custom hooks (React Query + Zustand)
+├── services/           API layer (Supabase + Firebase)
+├── store/              Zustand state stores
+├── types/              TypeScript type definitions
+├── utils/              Helper utilities
+├── constants/          Static configuration
+└── AGENTS.md           AI-assisted development instructions
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## Available Scripts
 
-### Other setup steps
+```bash
+npm start          # Start Expo dev server
+npm run android    # Start with Android
+npm run ios        # Start with iOS
+npm run web        # Start with Web
+npm run build:web  # Export for web deployment
+npm run lint       # Run ESLint
+npx tsc --noEmit   # TypeScript type check
+```
 
-- To set up ESLint for linting, run `npx expo lint`, or follow our guide on ["Using ESLint and Prettier"](https://docs.expo.dev/guides/using-eslint/)
-- If you'd like to set up unit testing, follow our guide on ["Unit Testing with Jest"](https://docs.expo.dev/develop/unit-testing/)
-- Learn more about the TypeScript setup in this template in our guide on ["Using TypeScript"](https://docs.expo.dev/guides/typescript/)
+## Development Workflow
 
-## Learn more
+1. **Sync with staging**
 
-To learn more about developing your project with Expo, look at the following resources:
+   ```bash
+   git checkout staging && git pull
+   ```
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
+2. **Create a feature branch**
 
-## Join the community
+   ```bash
+   git checkout -b feature/<task-name>
+   ```
 
-Join our community of developers creating universal apps.
+3. **Make changes and verify**
 
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+   ```bash
+   npx tsc --noEmit          # Type check
+   npx eslint . --ext .ts,.tsx  # Lint
+   npx expo start            # Test on Web + Android + iOS
+   ```
+
+4. **Commit and push**
+
+   ```bash
+   git add -A
+   git commit -m "type: description"
+   git push origin feature/<task-name>
+   ```
+
+5. **Open a Pull Request** into `staging` on GitHub
+
+> See [AGENTS.md](./AGENTS.md) for detailed branch rules, commit format, and PR workflow.
+
+## Deployment
+
+Deployment is fully automated via GitHub Actions:
+
+- **Preview URLs** created automatically for each PR
+- **Live deployment** triggers on push to `staging`
+- No manual Firebase deploy commands needed
+
+## Team
+
+- **Owner** — writes code, opens PRs
+- **Collaborator** — reviews and merges PRs
+
+The person who writes the code does **not** merge their own PR.
