@@ -18,15 +18,20 @@ export async function createSettlement(
   input: SettlementInput
 ): Promise<{ settlement: Settlement | null; error: string | null }> {
   try {
+    const insertData: Record<string, unknown> = {
+      group_id: input.groupId,
+      payer_id: input.payerId,
+      receiver_id: input.receiverId,
+      amount: input.amount,
+      status: 'completed',
+    };
+    if (input.note !== undefined) {
+      insertData.note = input.note;
+    }
+
     const { data, error } = await supabase
       .from('settlements')
-      .insert({
-        group_id: input.groupId,
-        payer_id: input.payerId,
-        receiver_id: input.receiverId,
-        amount: input.amount,
-        status: 'completed',
-      })
+      .insert(insertData)
       .select()
       .single();
 
@@ -40,6 +45,7 @@ export async function createSettlement(
       payerId: data.payer_id as string,
       receiverId: data.receiver_id as string,
       amount: data.amount as number,
+      note: data.note as string | undefined,
       status: data.status as Settlement['status'],
       createdAt: data.created_at as string,
     };
@@ -49,7 +55,8 @@ export async function createSettlement(
       getUserName(input.receiverId),
       getGroupName(input.groupId),
     ]);
-    const settlementDesc = `Settlement of ₹${input.amount.toFixed(2)} from ${payerName} to ${receiverName} in ${groupName}`;
+    const noteSuffix = input.note ? ` — ${input.note}` : '';
+    const settlementDesc = `Settlement of ₹${input.amount.toFixed(2)} from ${payerName} to ${receiverName} in ${groupName}${noteSuffix}`;
     await createActivityForGroupMembers(input.groupId, input.payerId, {
       type: 'settlement_made',
       description: settlementDesc,
@@ -126,6 +133,7 @@ export async function fetchSettlements(
       payerId: item.payer_id as string,
       receiverId: item.receiver_id as string,
       amount: item.amount as number,
+      note: item.note as string | undefined,
       status: item.status as Settlement['status'],
       createdAt: item.created_at as string,
     }));
