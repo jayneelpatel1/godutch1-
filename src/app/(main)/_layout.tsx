@@ -1,9 +1,9 @@
 /**
  * @screen MainTabLayout
- * @description Tab navigation layout with three main tabs: Groups, Activity, Profile.
+ * @description Tab navigation layout with four main tabs: Groups, Friends, Activity, Profile.
  *              Uses a custom CenteredTabBar component for consistent cross-platform appearance.
- *              Hidden tab screens (expense, create-group, group/*) are registered here
- *              without tab bar buttons.
+ *              Hidden tab screens (expense, create-group, group/*, friends/[id]) are
+ *              registered here without tab bar buttons.
  *
  * @route /(main) — tab navigator
  * @auth Required — child screens assume user is authenticated
@@ -164,6 +164,15 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
+          name="friends/index"
+          options={{
+            title: 'Friends',
+            tabBarIcon: ({ color }) => (
+              <Ionicons name="people" size={24} color={color} />
+            ),
+          }}
+        />
+        <Tabs.Screen
           name="profile"
           options={{
             title: 'Profile',
@@ -216,6 +225,12 @@ export default function TabLayout() {
         />
         <Tabs.Screen
           name="expense/[id]"
+          options={{
+            tabBarButton: () => null,
+          }}
+        />
+        <Tabs.Screen
+          name="friends/[id]"
           options={{
             tabBarButton: () => null,
           }}

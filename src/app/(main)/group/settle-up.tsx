@@ -61,6 +61,7 @@ export default function SettleUpScreen() {
   const [userMap, setUserMap] = useState<Record<string, string>>({});
   const [settlingUserId, setSettlingUserId] = useState<string | null>(null);
   const [settleAmount, setSettleAmount] = useState('');
+  const [settleNote, setSettleNote] = useState('');
 
   useEffect(() => {
     const memberUserIds = group?.members?.map((m) => m.user_id) || [];
@@ -116,12 +117,14 @@ export default function SettleUpScreen() {
         payerId: isCurrentUserPayer ? currentUserId : settlingUserId,
         receiverId: isCurrentUserPayer ? settlingUserId : currentUserId,
         amount,
+        note: settleNote.trim() || undefined,
       },
       {
         onSuccess: () => {
           showToast('success', 'Settlement recorded successfully');
           setSettlingUserId(null);
           setSettleAmount('');
+          setSettleNote('');
           router.replace(`/group/${groupId}`);
         },
         onError: (error: any) => {
@@ -234,17 +237,24 @@ export default function SettleUpScreen() {
                             placeholder="0.00"
                             placeholderTextColor={theme.textSecondary}
                           />
-                          <Pressable
-                            style={[styles.confirmButton, { backgroundColor: theme.primary }]}
-                            onPress={handleSettle}
-                          >
-                            {createSettlement.isPending ? (
-                              <ActivityIndicator size="small" color="#FFFFFF" />
-                            ) : (
-                              <ThemedText style={styles.confirmText}>Request</ThemedText>
-                            )}
-                          </Pressable>
                         </View>
+                        <TextInput
+                          style={[styles.noteInput, { color: theme.text, borderColor: theme.textSecondary }]}
+                          value={settleNote}
+                          onChangeText={setSettleNote}
+                          placeholder="Note (optional)"
+                          placeholderTextColor={theme.textSecondary}
+                        />
+                        <Pressable
+                          style={[styles.confirmButton, { backgroundColor: theme.primary, alignSelf: 'flex-end', marginTop: Spacing.two }]}
+                          onPress={handleSettle}
+                        >
+                          {createSettlement.isPending ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <ThemedText style={styles.confirmText}>Settle</ThemedText>
+                          )}
+                        </Pressable>
                       </View>
                     )}
                   </View>
@@ -302,17 +312,24 @@ export default function SettleUpScreen() {
                             placeholder="0.00"
                             placeholderTextColor={theme.textSecondary}
                           />
-                          <Pressable
-                            style={[styles.confirmButton, { backgroundColor: theme.danger }]}
-                            onPress={handleSettle}
-                          >
-                            {createSettlement.isPending ? (
-                              <ActivityIndicator size="small" color="#FFFFFF" />
-                            ) : (
-                              <ThemedText style={styles.confirmText}>Pay</ThemedText>
-                            )}
-                          </Pressable>
                         </View>
+                        <TextInput
+                          style={[styles.noteInput, { color: theme.text, borderColor: theme.textSecondary }]}
+                          value={settleNote}
+                          onChangeText={setSettleNote}
+                          placeholder="Note (optional)"
+                          placeholderTextColor={theme.textSecondary}
+                        />
+                        <Pressable
+                          style={[styles.confirmButton, { backgroundColor: theme.primary, alignSelf: 'flex-end', marginTop: Spacing.two }]}
+                          onPress={handleSettle}
+                        >
+                          {createSettlement.isPending ? (
+                            <ActivityIndicator size="small" color="#FFFFFF" />
+                          ) : (
+                            <ThemedText style={styles.confirmText}>Settle</ThemedText>
+                          )}
+                        </Pressable>
                       </View>
                     )}
                   </View>
@@ -344,6 +361,11 @@ export default function SettleUpScreen() {
                               ? `You paid ${userMap[s.receiverId] || 'Unknown'}`
                               : `${userMap[s.payerId] || 'Unknown'} paid you`}
                           </ThemedText>
+                          {s.note ? (
+                            <ThemedText type="small" themeColor="textSecondary" style={{ marginBottom: 2 }}>
+                              {s.note}
+                            </ThemedText>
+                          ) : null}
                           <ThemedText type="small" themeColor="textSecondary">
                             {new Date(s.createdAt).toLocaleDateString()}
                           </ThemedText>
@@ -458,6 +480,13 @@ const styles = StyleSheet.create({
     padding: Spacing.two,
     fontSize: 18,
     fontWeight: '600',
+  },
+  noteInput: {
+    borderWidth: 1,
+    borderRadius: BorderRadius,
+    padding: Spacing.two,
+    fontSize: 14,
+    marginTop: Spacing.two,
   },
   confirmButton: {
     paddingHorizontal: Spacing.four,

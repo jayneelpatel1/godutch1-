@@ -1146,13 +1146,19 @@ End of week (when stable)
 * `services/googleAuth.ts` - Firebase Auth
 * `services/groupService.ts` - Group CRUD
 * `services/expenseService.ts` - Expense CRUD
+* `services/settlementService.ts` - Settlement CRUD + balances
 * `services/userService.ts` - User management
+* `services/friendService.ts` - Friend balances + settlements across groups
+* `services/activityService.ts` - Activity feed
 
 ## Key Hooks:
 
 * `hooks/useGroups.ts` - Group data with React Query
 * `hooks/useExpenses.ts` - Expense data with React Query
 * `hooks/useUser.ts` - User data management
+* `hooks/useSettlements.ts` - Settlement + balance mutations
+* `hooks/useFriends.ts` - Friend balances across groups
+* `hooks/useActivities.ts` - Activity feed
 
 ## State Management:
 
@@ -1168,9 +1174,24 @@ End of week (when stable)
 - [x] M2: Authentication (Firebase)
 - [x] M3: Group management
 - [x] M4: Expense management
-- [x] M5: Balance engine (current)
+- [x] M5: Balance engine + Friends tab (current)
 - [ ] M6: Offline sync (optional, deferred)
 - [ ] M7: Polish & deploy
+
+---
+
+# ✅ Implemented Features
+
+| Feature | Status | Milestone | Files |
+|---------|--------|-----------|-------|
+| Auth (Firebase Google Sign-In) | ✅ Done | M2 | `services/googleAuth.ts`, `store/authStore.ts`, `app/(auth)/login.tsx` |
+| Group CRUD | ✅ Done | M3 | `services/groupService.ts`, `hooks/useGroups.ts`, `components/group-card.tsx` |
+| Expense CRUD | ✅ Done | M4 | `services/expenseService.ts`, `hooks/useExpenses.ts` |
+| Balance Engine | ✅ Done | M5 | `utils/balance.ts`, `services/settlementService.ts` |
+| Group Settle-Up | ✅ Done | M5 | `app/(main)/group/settle-up.tsx`, `app/(main)/group/[id].tsx` |
+| Activity Feed | ✅ Done | M5 | `services/activityService.ts`, `hooks/useActivities.ts`, `app/(main)/activity.tsx` |
+| **Friends Tab** | ✅ **Done** | **M5** | `services/friendService.ts`, `hooks/useFriends.ts`, `app/(main)/friends/index.tsx`, `app/(main)/friends/[id].tsx` |
+| Settlement Note | ✅ Done | M5 | `types/settlement.ts`, `services/settlementService.ts`, `database/migrations/001_add_settlement_note.sql` |
 
 ---
 
