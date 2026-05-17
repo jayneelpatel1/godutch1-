@@ -1367,3 +1367,68 @@ debug: identify issue in [component/service]
 * MUST verify cross-platform compatibility
 
 ---
+
+# 📱 EAS Build & Crashlytics Testing
+
+## 🎯 When to use
+
+When the user says "build an APK" or "build for Crashlytics testing" or the app crashes on launch and they want to verify Crashlytics captures it.
+
+## 🔢 Steps (run in this order)
+
+### Step 1 — Check EAS login
+
+```bash
+npx eas whoami
+```
+
+If not logged in:
+```bash
+npx eas login
+```
+
+### Step 2 — Build Android APK (preview profile)
+
+```bash
+npx eas build -p android --profile preview --wait
+```
+
+This produces an APK you can install directly on a device (uses `distribution: "internal"` from eas.json).
+
+### Step 3 — Install & test
+
+1. Download APK from the build output link or scan the QR code
+2. Install on a physical Android device (emulators may not send crash reports reliably)
+3. Open the app — if it crashes, Crashlytics captures it
+4. Re-open the app 1-2 more times (Crashlytics sends reports on subsequent cold starts)
+5. Wait ~5 minutes
+
+### Step 4 — View crash in Firebase Console
+
+Go to https://console.firebase.google.com/project/godutch-ab7b2/crashlytics
+
+The **Issues** tab shows all crashes grouped by type with:
+- Stack traces
+- Affected users / devices
+- Custom log breadcrumbs (`crashlyticsLog`)
+- Custom attributes (`crashlyticsSetAttribute`)
+
+**Note:** The Issues tab only appears after the first crash report is received. If it still shows "Add SDK" after testing, click through the onboarding flow — it needs to be enabled once.
+
+## 🧪 Testing with a deliberate crash
+
+If the app doesn't crash naturally, add this temporarily:
+
+```ts
+import crashlytics from '@react-native-firebase/crashlytics';
+crashlytics().crash();
+```
+
+## ⚠️ Important
+
+- Debug builds (via `expo start` / Metro) do NOT send crash reports
+- Development builds (`expo-dev-client`) do send crashes but may be delayed while Metro is connected
+- **Release builds** (EAS `preview` or `production`) send crash reports reliably
+- `eas.json` already has `preview` and `production` profiles configured
+
+---

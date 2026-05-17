@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "Kharchaa",
-    "slug": "kharchaa",
+    "slug": "godutch1",
     "newArchEnabled": true,
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,10 +9,12 @@
     "scheme": "kharchaa",
     "userInterfaceStyle": "automatic",
     "ios": {
+      "googleServicesFile": "./GoogleService-Info.plist",
       "icon": "./assets/images/icon.png",
       "bundleIdentifier": "com.kharchaa.app"
     },
     "android": {
+      "googleServicesFile": "./google-services.json",
       "adaptiveIcon": {
         "backgroundColor": "#E6F4FE",
         "foregroundImage": "./assets/images/android-icon-foreground.png",
@@ -20,7 +22,7 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "predictiveBackGestureEnabled": false,
-      "package": "com.kharchaa.app"
+      "package": "com.goductch.android"
     },
     "web": {
       "output": "static",
@@ -42,6 +44,16 @@
           "ios": {
             "image": "./assets/images/splash-icon.png",
             "imageWidth": 100
+          }
+        }
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/crashlytics",
+      [
+        "expo-build-properties",
+        {
+          "ios": {
+            "useFrameworks": "static"
           }
         }
       ]

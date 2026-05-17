@@ -22,7 +22,20 @@
       }
     },
     "preview": {
-      "distribution": "internal"
+      "distribution": "internal",
+      "env": {
+        "EXPO_PUBLIC_SUPABASE_URL": "https://ksktoqwfnogfuropvhsw.supabase.co",
+        "EXPO_PUBLIC_SUPABASE_ANON_KEY": "sb_publishable_z4nswX1n3C5ZQbbAYJQKhQ_m1l3jnPP",
+        "EXPO_PUBLIC_FIREBASE_API_KEY": "AIzaSyD8GpJsmcF9g_rRJjsWqO9pltTYKzZXF2U",
+        "EXPO_PUBLIC_FIREBASE_AUTH_DOMAIN": "godutch-ab7b2.firebaseapp.com",
+        "EXPO_PUBLIC_FIREBASE_PROJECT_ID": "godutch-ab7b2",
+        "EXPO_PUBLIC_FIREBASE_STORAGE_BUCKET": "godutch-ab7b2.firebasestorage.app",
+        "EXPO_PUBLIC_FIREBASE_MESSAGING_SENDER_ID": "1054461629356",
+        "EXPO_PUBLIC_FIREBASE_APP_ID": "1:1054461629356:web:b70c7197277e3c682d2009",
+        "EXPO_PUBLIC_FIREBASE_IOS_CLIENT_ID": "1054461629356-eqapog6rsrebrjbkmtpken0r1lp9fmgi.apps.googleusercontent.com",
+        "EXPO_PUBLIC_FIREBASE_WEB_CLIENT_ID": "1054461629356-lbu59cpkf63csgaj2j2u42r0855ne33v.apps.googleusercontent.com",
+        "NPM_CONFIG_LEGACY_PEER_DEPS": "true"
+      }
     },
     "production": {}
   },

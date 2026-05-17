@@ -1,0 +1,46 @@
+{
+  "project_info": {
+    "project_number": "1054461629356",
+    "project_id": "godutch-ab7b2",
+    "storage_bucket": "godutch-ab7b2.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1054461629356:android:ade7d4689a0ba0022d2009",
+        "android_client_info": {
+          "package_name": "com.goductch.android"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1054461629356-lbu59cpkf63csgaj2j2u42r0855ne33v.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbXW9MuWUBuPVNAlTTcVGrmDg6NemRq7o"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "1054461629356-lbu59cpkf63csgaj2j2u42r0855ne33v.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "1054461629356-eqapog6rsrebrjbkmtpken0r1lp9fmgi.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.godutch1.app"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

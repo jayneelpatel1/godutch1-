@@ -23,6 +23,11 @@ import { QueryProvider } from '@/hooks/QueryProvider';
 import { onGoogleAuthStateChange } from '@/services/googleAuth';
 import { createOrUpdateUser } from '@/services/userService';
 import { supabase } from '@/services/supabase';
+import {
+  initCrashlytics,
+  setCrashlyticsUserId,
+  crashlyticsLog,
+} from '@/services/crashlyticsService';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -35,10 +40,16 @@ export default function RootLayout() {
   const [fontsLoaded] = useFonts({ ...Ionicons.font });
 
   useEffect(() => {
+    initCrashlytics();
+  }, []);
+
+  useEffect(() => {
     let mounted = true;
     const unsubscribe = onGoogleAuthStateChange(async (authUser) => {
       if (!mounted) return;
       if (authUser) {
+        setCrashlyticsUserId(authUser.id);
+        crashlyticsLog('User authenticated: ' + authUser.id);
         try {
           const { data, error } = await supabase
             .from('users')
@@ -62,6 +73,7 @@ export default function RootLayout() {
           setUser(authUser);
         }
       } else {
+        setCrashlyticsUserId(null);
         setUser(null);
       }
       setLoading(false);
@@ -72,9 +84,12 @@ export default function RootLayout() {
 
   useEffect(() => {
     if (isLoading) return;
-    if (user) router.replace('/(main)');
-    else router.replace('/(auth)/login');
-  }, [isLoading, user, router]);
+    const timer = setTimeout(() => {
+      if (user) router.replace('/(main)');
+      else router.replace('/(auth)/login');
+    }, 0);
+    return () => clearTimeout(timer);
+  }, [isLoading, user]);
 
   if (isLoading || !fontsLoaded) return null;
 
